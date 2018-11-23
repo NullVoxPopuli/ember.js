@@ -3,6 +3,9 @@ import { inspect } from '@ember/-internals/utils';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { assert, warn } from '@ember/debug';
 import EmberError from '@ember/error';
+
+import { computedDecoratorWithParams } from '@ember-decorators/utils';
+
 import {
   getCachedValueFor,
   getCacheFor,
@@ -609,7 +612,7 @@ if (EMBER_METAL_TRACKED_PROPERTIES) {
   @return {ComputedProperty} property descriptor instance
   @public
 */
-export default function computed(...args: (string | ComputedPropertyConfig)[]): ComputedProperty {
+export function computed_original(...args: (string | ComputedPropertyConfig)[]): ComputedProperty {
   let func = args.pop();
 
   let cp = new ComputedProperty(func as ComputedPropertyConfig);
@@ -620,7 +623,111 @@ export default function computed(...args: (string | ComputedPropertyConfig)[]): 
 
   return cp;
 }
+
+
+/**
+  Decorator that turns a native getter/setter into a computed property. Note
+  that though they use getters and setters, you must still use the Ember `get`/
+  `set` functions to get and set their values.
+
+  ```js
+  import Component from '@ember/component';
+  import { computed } from '@ember-decorators/object';
+
+  export default class UserProfileComponent extends Component {
+    first = 'John';
+    last = 'Smith';
+
+    @computed('first', 'last')
+    get name() {
+      const first = this.get('first');
+      const last = this.get('last');
+
+      return `${first} ${last}`; // => 'John Smith'
+    }
+
+    set name(value) {
+      if (typeof value !== 'string' || !value.test(/^[a-z]+ [a-z]+$/i)) {
+        throw new TypeError('Invalid name');
+      }
+
+      const [first, last] = value.split(' ');
+      this.setProperties({ first, last });
+
+      return value;
+    }
+  }
+  ```
+
+  @function
+  @param {...string} propertyNames - List of property keys this computed is dependent on
+  @return {ComputedProperty}
+*/
+
+
+export const computedDecorator = computedDecoratorWithParams(
+  ({ key, descriptor }: any, params: any) => {
+  assert(
+    `Attempted to apply @computed to ${key}, but it is not a native accessor function. Try converting it to \`get ${key}()\``,
+    'get' in descriptor || 'set' in descriptor
+  );
+  assert(
+    `Using @computed for only a setter does not make sense. Add a getter for '${key}' as well or remove the @computed decorator.`,
+    'get' in descriptor && descriptor.get !== undefined
+  );
+
+  let { get, set } = descriptor;
+
+  // Unset the getter and setter so the descriptor just has a plain value
+  descriptor.get = undefined;
+  descriptor.set = undefined;
+
+  let setter;
+
+  if (typeof set === 'function') {
+    setter = function(key, value) {
+      let ret = set.call(this, value);
+      return typeof ret === 'undefined' ? get.call(this) : ret;
+    };
+  } else {
+    setter = function(key) {
+      assert(
+        `Attempted to set ${key}, but it does not have a setter. Overriding a computed property without a setter has been deprecated.`,
+        false
+      );
+    };
+  }
+
+  return computed_original(...params, { get, set: setter });
+});
+
+/**
+  decorator? or original, non-decorator-computed
+
+  non-decorator usage:
+    property = computed(function() { ... })
+    property = computed('dependentKey', function() { ... })
+
+  decorator usage:
+    @computed get property() { ... }
+    @computed('dependentKey') get property() { ... }
+    @computed('dependentKey', { readOnly: true }) get property() { ... }
+
+
+**/
+const computed = function(...args) {
+  const lastArg = args[args.length - 1];
+
+  if (typeof lastArg === 'function') {
+    return computed_original(...args);
+  }
+
+  return computedDecorator(...args);
+}
+
+export default computed;
+
 // used for the Ember.computed global only
-export const _globalsComputed = computed.bind(null);
+export const _globalsComputed = computed_original.bind(null);
 
 export { ComputedProperty, computed };
