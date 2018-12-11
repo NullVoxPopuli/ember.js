@@ -27,6 +27,9 @@ module.exports = function processModulesOnly(tree, strict = false) {
       ['@babel/transform-modules-amd', transformOptions],
       enifed,
     ],
+    parserOpts: {
+      plugins: [['decorators', { decoratorsBeforeExport: true }]],
+    },
     moduleIds: true,
     getModuleId: getRelativeModulePath,
   };

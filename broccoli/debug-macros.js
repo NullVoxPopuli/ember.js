@@ -39,5 +39,9 @@ module.exports = function debugMacros(tree, environment) {
     ],
   ];
 
-  return new Babel(tree, { plugins });
+  let parserOpts = {
+    plugins: [['decorators', { decoratorsBeforeExport: true }]],
+  };
+
+  return new Babel(tree, { plugins, parserOpts });
 };
