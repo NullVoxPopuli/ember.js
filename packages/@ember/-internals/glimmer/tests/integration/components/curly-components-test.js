@@ -23,6 +23,7 @@ import { A as emberA } from '@ember/array';
 import { Component, compile, htmlSafe } from '../../utils/helpers';
 import { backtrackingMessageFor } from '../../utils/debug-stack';
 import { DEPRECATIONS } from '../../../../deprecations';
+import { setComponentTemplate } from '@glimmer/manager';
 
 moduleFor(
   'Components test: curly components',
@@ -163,6 +164,21 @@ moduleFor(
       this.render('{{foo-bar}}');
 
       this.assertText('FIZZ BAR hey');
+    }
+
+    ['@test layout can come from `getComponentTemplate`']() {
+      class FooBar extends Component {
+        tagName = '';
+        greeting = 'hello there!';
+      }
+
+      setComponentTemplate(this.compile(`{{this.greeting}}`), FooBar);
+
+      this.owner.register('component:foo-bar', FooBar);
+
+      this.render('{{foo-bar}}');
+
+      this.assertText('hello there!');
     }
 
     ['@test layout supports computed property']() {
