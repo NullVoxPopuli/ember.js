@@ -39,12 +39,7 @@ export {
 */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface EmberObject extends Observable {}
-class EmberObject extends CoreObject.extend(Observable) {
-  get _debugContainerKey() {
-    let factory = getFactoryFor(this);
-    return factory !== undefined && factory.fullName;
-  }
-}
+class EmberObject extends CoreObject.extend(Observable) {}
 
 export default EmberObject;
 
@@ -266,46 +261,4 @@ export function observer<T extends AnyFn>(
   ...args:
     | [propertyName: string, ...additionalPropertyNames: string[], func: T]
     | [ObserverDefinition<T>]
-): T {
-  let funcOrDef = args.pop();
-
-  assert(
-    'observer must be provided a function or an observer definition',
-    typeof funcOrDef === 'function' || (typeof funcOrDef === 'object' && funcOrDef !== null)
-  );
-
-  let func: T;
-  let dependentKeys: string[];
-  let sync: boolean;
-
-  if (typeof funcOrDef === 'function') {
-    func = funcOrDef;
-    dependentKeys = args as string[];
-    sync = !ENV._DEFAULT_ASYNC_OBSERVERS;
-  } else {
-    func = funcOrDef.fn;
-    dependentKeys = funcOrDef.dependentKeys;
-    sync = funcOrDef.sync;
-  }
-
-  assert('observer called without a function', typeof func === 'function');
-  assert(
-    'observer called without valid path',
-    Array.isArray(dependentKeys) &&
-      dependentKeys.length > 0 &&
-      dependentKeys.every((p) => typeof p === 'string' && Boolean(p.length))
-  );
-  assert('observer called without sync', typeof sync === 'boolean');
-
-  let paths: string[] = [];
-
-  for (let dependentKey of dependentKeys) {
-    expandProperties(dependentKey, (path: string) => paths.push(path));
-  }
-
-  setObservers(func as Function, {
-    paths,
-    sync,
-  });
-  return func;
-}
+): T {}
