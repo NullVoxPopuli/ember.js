@@ -33,7 +33,6 @@ export { tracked, cached } from '@ember/-internals/metal';
   ```javascript
   import Component from '@glimmer/component';
   import { tracked } from '@glimmer/tracking';
-  import { action } from '@ember/object';
 
   export default class CounterComponent extends Component {
     @tracked count = 0;
@@ -114,7 +113,6 @@ export { tracked, cached } from '@ember/-internals/metal';
   manner to classic computed properties:
 
   ```javascript
-  import EmberObject from '@ember/object';
   import { tracked } from '@glimmer/tracking';
 
   const Entry = EmberObject.extend({
@@ -130,7 +128,6 @@ export { tracked, cached } from '@ember/-internals/metal';
   both).
 
   ```javascript
-  import EmberObject from '@ember/object';
   import { tracked } from '@glimmer/tracking';
 
   const Entry = EmberObject.extend({

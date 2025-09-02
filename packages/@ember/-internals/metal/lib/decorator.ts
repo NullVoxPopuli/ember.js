@@ -94,60 +94,6 @@ function DESCRIPTOR_GETTER_FUNCTION(name: string, descriptor: ComputedDescriptor
   return getter;
 }
 
-function DESCRIPTOR_SETTER_FUNCTION(
-  name: string,
-  descriptor: ComputedDescriptor
-): (value: any) => void {
-  let set = function CPSETTER_FUNCTION(this: object, value: any): void {
-    return descriptor.set(this, name, value);
-  };
-
-  COMPUTED_SETTERS.add(set);
-
-  return set;
-}
-
-export const COMPUTED_SETTERS = new WeakSet();
-
-export function makeComputedDecorator(
-  desc: ComputedDescriptor,
-  DecoratorClass: { prototype: object }
-): ExtendedMethodDecorator {
-  let decorator = function COMPUTED_DECORATOR(
-    target: object,
-    key: string,
-    propertyDesc?: DecoratorPropertyDescriptor,
-    maybeMeta?: Meta,
-    isClassicDecorator?: boolean
-  ): DecoratorPropertyDescriptor {
-    assert(
-      `Only one computed property decorator can be applied to a class field or accessor, but '${key}' was decorated twice. You may have added the decorator to both a getter and setter, which is unnecessary.`,
-      isClassicDecorator ||
-        !propertyDesc ||
-        !propertyDesc.get ||
-        !COMPUTED_GETTERS.has(propertyDesc.get)
-    );
-
-    let meta = arguments.length === 3 ? metaFor(target) : maybeMeta;
-    desc.setup(target, key, propertyDesc, meta!);
-
-    let computedDesc: PropertyDescriptor = {
-      enumerable: desc.enumerable,
-      configurable: desc.configurable,
-      get: DESCRIPTOR_GETTER_FUNCTION(key, desc),
-      set: DESCRIPTOR_SETTER_FUNCTION(key, desc),
-    };
-
-    return computedDesc;
-  };
-
-  setClassicDecorator(decorator, desc);
-
-  Object.setPrototypeOf(decorator, DecoratorClass.prototype);
-
-  return decorator;
-}
-
 /////////////
 
 const DECORATOR_DESCRIPTOR_MAP: WeakMap<ExtendedMethodDecorator, ComputedDescriptor | true> =

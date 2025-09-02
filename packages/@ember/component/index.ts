@@ -5,7 +5,6 @@
 
 export { setComponentTemplate, getComponentTemplate } from '@glimmer/manager';
 
-export { Component as default } from '@ember/-internals/glimmer';
 export {
   componentCapabilities as capabilities,
   setComponentManager,

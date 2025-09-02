@@ -5,7 +5,7 @@ import { consumeTag, dirtyTagFor, tagFor, trackedData } from '@glimmer/validator
 import type { ElementDescriptor } from '..';
 import { CHAIN_PASS_THROUGH } from './chain-tags';
 import type { ExtendedMethodDecorator, DecoratorPropertyDescriptor } from './decorator';
-import { COMPUTED_SETTERS, isElementDescriptor, setClassicDecorator } from './decorator';
+import { isElementDescriptor, setClassicDecorator } from './decorator';
 import { SELF_TAG } from './tags';
 
 /**
@@ -178,8 +178,6 @@ function descriptorForField([target, key, desc]: ElementDescriptor): DecoratorPr
     get,
     set,
   };
-
-  COMPUTED_SETTERS.add(set);
 
   metaFor(target).writeDescriptors(key, new TrackedDescriptor(get, set));
 

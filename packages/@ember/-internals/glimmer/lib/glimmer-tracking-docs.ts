@@ -39,7 +39,6 @@
   ```javascript
   import Component from '@glimmer/component';
   import { tracked } from '@glimmer/tracking';
-  import { action } from '@ember/object';
 
   export default class CounterComponent extends Component {
     @tracked count = 0;
@@ -121,7 +120,6 @@
   manner to classic computed properties:
 
   ```javascript
-  import EmberObject from '@ember/object';
   import { tracked } from '@glimmer/tracking';
 
   const Entry = EmberObject.extend({
@@ -138,7 +136,6 @@
   both).
 
   ```javascript
-  import EmberObject from '@ember/object';
   import { tracked } from '@glimmer/tracking';
 
   const Entry = EmberObject.extend({

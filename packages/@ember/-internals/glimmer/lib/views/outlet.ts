@@ -3,7 +3,6 @@
 // We use `getOwner` from our internal home for it rather than the narrower
 // public API for the same reason.
 import { type InternalOwner, getOwner } from '@ember/-internals/owner';
-import type { BootOptions } from '@ember/engine/instance';
 import { assert } from '@ember/debug';
 import { schedule } from '@ember/runloop';
 import type { Template, TemplateFactory } from '@glimmer/interfaces';

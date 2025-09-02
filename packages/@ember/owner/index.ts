@@ -53,7 +53,6 @@ import { type default as Owner, getOwner as internalGetOwner } from '@ember/-int
 
   ```app/components/play-audio.js
   import Component from '@glimmer/component';
-  import { action } from '@ember/object';
   import { getOwner } from '@ember/owner';
 
   // Usage:

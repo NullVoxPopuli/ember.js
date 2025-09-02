@@ -1,5 +1,4 @@
 import { ENV } from '@ember/-internals/environment';
-import { get, set, _getProp, _setProp } from '@ember/-internals/metal';
 import type { InternalOwner } from '@ember/-internals/owner';
 import { getDebugName } from '@ember/-internals/utils';
 import { constructStyleDeprecationMessage } from '@ember/-internals/views';
@@ -30,10 +29,40 @@ setGlobalContext({
   toBool,
   toIterator,
 
-  getProp: _getProp,
-  setProp: _setProp,
-  getPath: get,
-  setPath: set,
+  getProp(obj: unknown, prop: string) {
+    return (obj as Record<string, unknown>)[prop];
+  },
+
+  setProp(obj: unknown, prop: string, value: unknown) {
+    (obj as Record<string, unknown>)[prop] = value;
+  },
+
+  getPath(obj: unknown, path: string) {
+    let parts = path.split('.');
+
+    let current: unknown = obj;
+
+    for (let part of parts) {
+      if (typeof current === 'function' || (typeof current === 'object' && current !== null)) {
+        current = (current as Record<string, unknown>)[part];
+      }
+    }
+
+    return current;
+  },
+
+  setPath(obj: unknown, path: string, value: unknown) {
+    let parts = path.split('.');
+
+    let current: unknown = obj;
+    let pathToSet = parts.pop()!;
+
+    for (let part of parts) {
+      current = (current as Record<string, unknown>)[part];
+    }
+
+    (current as Record<string, unknown>)[pathToSet] = value;
+  },
 
   scheduleDestroy(destroyable, destructor) {
     schedule('actions', null, destructor, destroyable);

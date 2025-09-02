@@ -1,11 +1,8 @@
-import { objectAt } from '@ember/-internals/metal';
-import type EmberArray from '@ember/array';
 import { isObject } from '@ember/-internals/utils';
 import type { Nullable } from '@ember/-internals/utility-types';
 import type { IteratorDelegate } from '@glimmer/reference';
 import { consumeTag, isTracking, tagFor } from '@glimmer/validator';
 import { EachInWrapper } from '../helpers/each-in';
-import type { NativeArray } from '@ember/array';
 
 export default function toIterator(iterable: unknown): Nullable<IteratorDelegate> {
   if (iterable instanceof EachInWrapper) {
@@ -38,8 +35,6 @@ function toEachIterator(iterable: unknown) {
 
   if (Array.isArray(iterable)) {
     return ArrayIterator.from(iterable);
-  } else if (isEmberArray(iterable)) {
-    return EmberArrayIterator.from(iterable);
   } else if (isNativeIterable(iterable)) {
     return ArrayLikeNativeIterator.from(iterable);
   } else if (hasForEach(iterable)) {

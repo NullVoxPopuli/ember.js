@@ -10,7 +10,6 @@ const packages = [
   '@ember/helper',
   '@ember/instrumentation',
   '@ember/modifier',
-  '@ember/object',
   '@ember/owner',
   '@ember/renderer',
   '@ember/runloop',

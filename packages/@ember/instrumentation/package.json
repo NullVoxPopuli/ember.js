@@ -9,7 +9,6 @@
     "@ember/-internals": "workspace:*",
     "@ember/application": "workspace:*",
     "@ember/debug": "workspace:*",
-    "@ember/object": "workspace:*",
     "@ember/runloop": "workspace:*",
     "@ember/utils": "workspace:*",
     "@glimmer/env": "^0.1.7",

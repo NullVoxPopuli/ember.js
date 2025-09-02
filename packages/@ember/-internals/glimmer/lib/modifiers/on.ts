@@ -16,7 +16,6 @@
 
   ```app/components/like-post.js
   import Component from '@glimmer/component';
-  import { action } from '@ember/object';
 
   export default class LikePostComponent extends Component {
     @action

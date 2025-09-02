@@ -10,9 +10,7 @@
   "dependencies": {
     "@ember/-internals": "workspace:*",
     "@ember/application": "workspace:*",
-    "@ember/engine": "workspace:*",
     "@ember/enumerable": "workspace:*",
-    "@ember/object": "workspace:*",
     "@ember/owner": "workspace:*",
     "@ember/routing": "workspace:*",
     "@ember/runloop": "workspace:*",

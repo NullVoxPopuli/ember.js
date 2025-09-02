@@ -2,8 +2,7 @@ import intern from './intern';
 import { isObject } from './spec';
 
 /**
- @module @ember/object
-*/
+ */
 
 /**
  @private

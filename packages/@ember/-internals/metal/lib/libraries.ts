@@ -1,6 +1,4 @@
-import { assert, debug, warn } from '@ember/debug';
-import { DEBUG } from '@glimmer/env';
-import { get } from './property_get';
+import { warn } from '@ember/debug';
 
 interface Library {
   readonly name: string;
@@ -72,24 +70,6 @@ export class Libraries {
   declare logVersions?: () => void;
 }
 
-if (DEBUG) {
-  Libraries.prototype.logVersions = function (): void {
-    let libs = this._registry;
-    let nameLengths = libs.map((item) => get(item, 'name.length'));
-    assert(
-      'nameLengths is number array',
-      nameLengths instanceof Array && nameLengths.every((n): n is number => typeof n === 'number')
-    );
-    let maxNameLength = Math.max.apply(null, nameLengths);
-
-    debug('-------------------------------');
-    for (let lib of libs) {
-      let spaces = new Array(maxNameLength - lib.name.length + 1).join(' ');
-      debug([lib.name, spaces, ' : ', lib.version].join(''));
-    }
-    debug('-------------------------------');
-  };
-}
 const LIBRARIES = new Libraries();
 
 export default LIBRARIES;

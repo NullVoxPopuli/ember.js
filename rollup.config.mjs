@@ -47,6 +47,7 @@ function esmConfig() {
       format: 'es',
       dir: 'dist',
       hoistTransitiveImports: false,
+
       generatedCode: 'es2015',
       chunkFileNames: 'packages/shared-chunks/[name]-[hash].js',
     },
@@ -347,36 +348,6 @@ export function externalizePackages(deps) {
         // Anything not explicitliy handled above is an error, because we don't
         // want to accidentally incorporate anything else into the build.
         throw new Error(`don't understand ${source}`);
-      }
-    },
-  };
-}
-
-function license() {
-  return `/*!
- * @overview  Ember - JavaScript Application Framework
- * @copyright Copyright 2011 Tilde Inc. and contributors
- *            Portions Copyright 2006-2011 Strobe Inc.
- *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
- * @license   Licensed under MIT license
- *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   ${buildInfo().version}
- */
-`;
-}
-
-function loader() {
-  return readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), 'packages', 'loader', 'lib', 'index.js')
-  );
-}
-
-function licenseAndLoader() {
-  return {
-    name: 'license-and-loader',
-    generateBundle(options, bundles) {
-      for (let bundle of Object.values(bundles)) {
-        bundle.code = license() + loader() + bundle.code;
       }
     },
   };

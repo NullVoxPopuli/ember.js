@@ -5,7 +5,6 @@
 import type { InternalFactoryManager } from '@ember/-internals/container/lib/container';
 import type { InternalFactory, InternalOwner } from '@ember/-internals/owner';
 import { setOwner } from '@ember/-internals/owner';
-import { FrameworkObject } from '@ember/object/-internals';
 import { getDebugName } from '@ember/-internals/utils';
 import { assert } from '@ember/debug';
 import { join } from '@ember/runloop';
@@ -110,7 +109,7 @@ export default interface Helper<S = unknown> {
   */
   compute(positional: Positional<S>, named: Named<S>): Return<S>;
 }
-export default class Helper<S = unknown> extends FrameworkObject {
+export default class Helper<S = unknown> {
   static isHelperFactory = true;
   static [IS_CLASSIC_HELPER] = true;
 
@@ -146,7 +145,6 @@ export default class Helper<S = unknown> extends FrameworkObject {
     ```app/helpers/current-user-email.js
     import Helper from '@ember/component/helper'
     import { service } from '@ember/service'
-    import { observer } from '@ember/object'
 
     export default Helper.extend({
       session: service(),

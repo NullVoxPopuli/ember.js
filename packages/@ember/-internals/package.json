@@ -33,7 +33,6 @@
     "@ember/helper": "workspace:*",
     "@ember/instrumentation": "workspace:*",
     "@ember/modifier": "workspace:*",
-    "@ember/object": "workspace:*",
     "@ember/owner": "workspace:*",
     "@ember/routing": "workspace:*",
     "@ember/runloop": "workspace:*",

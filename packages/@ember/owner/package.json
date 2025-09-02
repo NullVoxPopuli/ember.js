@@ -9,8 +9,6 @@
     "@ember/-internals": "workspace:*",
     "@ember/application": "workspace:*",
     "@ember/debug": "workspace:*",
-    "@ember/engine": "workspace:*",
-    "@ember/object": "workspace:*",
     "@ember/routing": "workspace:*",
     "@ember/runloop": "workspace:*",
     "@glimmer/component": "workspace:^",

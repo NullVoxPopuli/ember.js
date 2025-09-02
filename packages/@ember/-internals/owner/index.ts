@@ -113,7 +113,6 @@ interface BasicRegistry {
 
     ```javascript
     import Application from '@ember/application';
-    import EmberObject from '@ember/object';
 
     let App = Application.create();
 
@@ -151,7 +150,6 @@ interface BasicRegistry {
 
     ```javascript
     import Application from '@ember/application';
-    import EmberObject from '@ember/object';
 
     let App = Application.create();
 
@@ -619,7 +617,6 @@ export interface RegistryProxy extends BasicRegistry {
 
     ```javascript
     import Application from '@ember/application';
-    import EmberObject from '@ember/object';
 
     let App = Application.create();
     let User = EmberObject.extend();

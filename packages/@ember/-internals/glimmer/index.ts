@@ -447,7 +447,6 @@
 export { templateFactory as template, templateCacheCounters } from '@glimmer/opcode-compiler';
 
 export { default as RootTemplate } from './lib/templates/root';
-export { default as Component } from './lib/component';
 export {
   default as Helper,
   helper,

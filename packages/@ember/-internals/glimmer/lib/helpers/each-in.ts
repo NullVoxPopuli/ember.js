@@ -2,7 +2,6 @@
 @module ember
 */
 import { tagForObject } from '@ember/-internals/metal';
-import { _contentFor } from '@ember/-internals/runtime';
 import { isProxy } from '@ember/-internals/utils';
 import { assert } from '@ember/debug';
 import type { CapturedArguments } from '@glimmer/interfaces';

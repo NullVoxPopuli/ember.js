@@ -1,7 +1,5 @@
-import { FrameworkObject } from '@ember/object/-internals';
 import { DEPRECATIONS, deprecateUntil } from '@ember/-internals/deprecations';
 import type { DecoratorPropertyDescriptor, ElementDescriptor } from '@ember/-internals/metal';
-import { inject as metalInject } from '@ember/-internals/metal';
 
 /**
  @module @ember/service
@@ -30,8 +28,6 @@ export function inject(
     'Importing `inject` from `@ember/service` is deprecated. Please import `service` instead.',
     DEPRECATIONS.DEPRECATE_IMPORT_INJECT
   );
-
-  return metalInject('service', ...args);
 }
 
 /**
@@ -87,9 +83,7 @@ export function service(...args: ElementDescriptor): DecoratorPropertyDescriptor
 export function service(): PropertyDecorator;
 export function service(
   ...args: [] | [name: string] | ElementDescriptor
-): PropertyDecorator | DecoratorPropertyDescriptor | void {
-  return metalInject('service', ...args);
-}
+): PropertyDecorator | DecoratorPropertyDescriptor | void {}
 
 /**
   @class Service

@@ -360,7 +360,6 @@ import { setOwner, type default as Owner } from '@ember/owner';
 
   ```javascript
   import Component from '@glimmer/component';
-  import { computed } from '@ember/object';
 
   export default class SomeComponent extends Component {
 

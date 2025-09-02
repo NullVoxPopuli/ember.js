@@ -18,7 +18,6 @@
     "@ember/engine": "workspace:*",
     "@ember/enumerable": "workspace:*",
     "@ember/instrumentation": "workspace:*",
-    "@ember/object": "workspace:*",
     "@ember/routing": "workspace:*",
     "@ember/runloop": "workspace:*",
     "@ember/service": "workspace:*",

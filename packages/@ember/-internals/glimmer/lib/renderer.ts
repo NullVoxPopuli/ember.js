@@ -48,18 +48,14 @@ import { unwrapTemplate } from './component-managers/unwrap-template';
 import { CURRENT_TAG, validateTag, valueForTag } from '@glimmer/validator';
 import type { SimpleDocument, SimpleElement, SimpleNode } from '@simple-dom/interface';
 import RSVP from 'rsvp';
-import type Component from './component';
 import { hasDOM } from '../../browser-environment';
-import type ClassicComponent from './component';
 import { BOUNDS } from './component-managers/curly';
-import { createRootOutlet } from './component-managers/outlet';
 import { RootComponentDefinition } from './component-managers/root';
 import { EmberEnvironmentDelegate } from './environment';
 import { StrictResolver } from './renderer/strict-resolver';
 import ResolverImpl from './resolver';
 import type { OutletState } from './utils/outlet';
 import OutletView from './views/outlet';
-import { makeRouteTemplate } from './component-managers/route-template';
 import { EvaluationContextImpl } from '@glimmer/opcode-compiler';
 
 export type IBuilder = (env: Environment, cursor: Cursor) => TreeBuilder;

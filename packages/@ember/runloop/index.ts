@@ -1,6 +1,5 @@
 import { assert } from '@ember/debug';
 import { onErrorTarget } from '@ember/-internals/error-handling';
-import { flushAsyncObservers } from '@ember/-internals/metal';
 import Backburner, { type Timer, type DeferredActionQueues } from 'backburner.js';
 import type { AnyFn } from '@ember/-internals/utility-types';
 
@@ -44,15 +43,9 @@ function onBegin(current: DeferredActionQueues) {
 
 function onEnd(_current: DeferredActionQueues, next: DeferredActionQueues) {
   currentRunLoop = next;
-
-  flushAsyncObservers(schedule);
 }
 
 function flush(queueName: string, next: () => void) {
-  if (queueName === 'render' || queueName === _rsvpErrorQueue) {
-    flushAsyncObservers(schedule);
-  }
-
   next();
 }
 
@@ -227,7 +220,6 @@ export function join(methodOrTarget: any, methodOrArg?: any, ...additionalArgs: 
 
   ```app/components/rich-text-editor.js
   import Component from '@ember/component';
-  import { on } from '@ember/object/evented';
   import { bind } from '@ember/runloop';
 
   export default Component.extend({

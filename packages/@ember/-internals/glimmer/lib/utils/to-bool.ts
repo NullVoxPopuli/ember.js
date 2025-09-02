@@ -1,5 +1,5 @@
 import { isHTMLSafe } from './string';
-import { get, tagForProperty } from '@ember/-internals/metal';
+import { tagForProperty } from '@ember/-internals/metal';
 import { isProxy } from '@ember/-internals/utils';
 import { consumeTag } from '@glimmer/validator';
 
@@ -7,7 +7,7 @@ export default function toBool(predicate: unknown): boolean {
   if (isProxy(predicate)) {
     consumeTag(tagForProperty(predicate, 'content'));
 
-    return Boolean(get(predicate, 'isTruthy'));
+    return Boolean(predicate.isTruthy);
   } else if (Array.isArray(predicate)) {
     consumeTag(tagForProperty(predicate as object, '[]'));
 

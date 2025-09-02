@@ -9,7 +9,6 @@ import type {
 } from '@ember/-internals/owner';
 import { dictionary, intern } from '@ember/-internals/utils';
 import { assert } from '@ember/debug';
-import type { set } from '@ember/object';
 import { DEBUG } from '@glimmer/env';
 import type { ContainerOptions, LazyInjection } from './container';
 import Container from './container';
