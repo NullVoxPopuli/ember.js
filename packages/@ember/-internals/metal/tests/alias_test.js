@@ -9,7 +9,6 @@ import {
   tagForProperty,
 } from '..';
 import EmberObject from '@ember/object';
-import { A } from '@ember/array';
 import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 import { destroy } from '@glimmer/destroyable';
 import { valueForTag, validateTag } from '@glimmer/validator';

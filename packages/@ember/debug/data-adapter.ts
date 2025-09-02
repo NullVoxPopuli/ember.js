@@ -3,10 +3,7 @@ import { getOwner } from '@ember/-internals/owner';
 import { _backburner, next } from '@ember/runloop';
 import { get } from '@ember/object';
 import { dasherize } from '@ember/-internals/string';
-import Namespace from '@ember/application/namespace';
-import type { NativeArray } from '@ember/array';
 import EmberObject from '@ember/object';
-import { A as emberA } from '@ember/array';
 import type { Cache } from '@glimmer/validator';
 import { consumeTag, createCache, getValue, tagFor, untrack } from '@glimmer/validator';
 import type ContainerDebugAdapter from '@ember/debug/container-debug-adapter';
@@ -33,7 +30,7 @@ type WrappedType<N extends string = string> = {
 type WrappedRecord<T> = {
   object: T;
   columnValues: object;
-  searchKeywords: NativeArray<unknown>;
+  searchKeywords: Array<unknown>;
   filterValues: object;
   color: RecordColor | null;
 };

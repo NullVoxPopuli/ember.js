@@ -1,7 +1,0 @@
-{
-  "extends": "@tsconfig/ember/tsconfig.json",
-  "compilerOptions": {
-    // downgrade from @tsconfig/ember@>=3.0.9 (which sets es2023)
-    "target": "es2022",
-  }
-}

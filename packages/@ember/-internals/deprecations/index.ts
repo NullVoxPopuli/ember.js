@@ -1,6 +1,5 @@
 import type { DeprecationOptions } from '@ember/debug/lib/deprecate';
 import { ENV } from '@ember/-internals/environment';
-import { VERSION } from '@ember/version';
 import { deprecate, assert } from '@ember/debug';
 import { dasherize } from '../string/index';
 
@@ -8,7 +7,7 @@ function isEnabled(options: DeprecationOptions) {
   return Object.hasOwnProperty.call(options.since, 'enabled') || ENV._ALL_DEPRECATIONS_ENABLED;
 }
 
-let numEmberVersion = parseFloat(ENV._OVERRIDE_DEPRECATION_VERSION ?? VERSION);
+let numEmberVersion = parseFloat(ENV._OVERRIDE_DEPRECATION_VERSION ?? '7');
 
 /* until must only be a minor version or major version */
 export function emberVersionGte(until: string, emberVersion = numEmberVersion) {

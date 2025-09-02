@@ -1,6 +1,5 @@
 import { assert, debug, warn } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
-import VERSION from 'ember/version';
 import { get } from './property_get';
 
 interface Library {
@@ -92,6 +91,5 @@ if (DEBUG) {
   };
 }
 const LIBRARIES = new Libraries();
-LIBRARIES.registerCoreLibrary('Ember', VERSION);
 
 export default LIBRARIES;

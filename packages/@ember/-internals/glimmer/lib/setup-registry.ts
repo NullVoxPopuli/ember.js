@@ -2,9 +2,6 @@ import type { Registry } from '@ember/-internals/container';
 import { privatize as P } from '@ember/-internals/container';
 import { getOwner } from '@ember/-internals/owner';
 import { assert } from '@ember/debug';
-import Input from './components/input';
-import LinkTo from './components/link-to';
-import Textarea from './components/textarea';
 import { clientBuilder, rehydrationBuilder, serializeBuilder } from './dom';
 import { Renderer } from './renderer';
 import OutletTemplate from './templates/outlet';
@@ -46,9 +43,4 @@ export function setupEngineRegistry(registry: Registry): void {
   registry.register('template:-outlet', OutletTemplate as any);
 
   registry.optionsForType('helper', { instantiate: false });
-
-  registry.register('component:input', Input);
-
-  registry.register('component:link-to', LinkTo);
-  registry.register('component:textarea', Textarea);
 }

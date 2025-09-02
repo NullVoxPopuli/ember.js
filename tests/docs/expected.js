@@ -614,8 +614,6 @@ module.exports = {
   modules: [
     '@ember/application',
     '@ember/application/namespace',
-    '@ember/array',
-    '@ember/array/proxy',
     '@ember/canary-features',
     '@ember/component',
     '@ember/component/template-only',

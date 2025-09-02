@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "@ember/-internals": "workspace:*",
-    "@ember/array": "workspace:*",
     "@ember/debug": "workspace:*",
     "@ember/object": "workspace:*",
     "@glimmer/destroyable": "0.94.8",

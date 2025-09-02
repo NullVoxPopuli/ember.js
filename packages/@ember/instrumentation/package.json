@@ -8,7 +8,6 @@
   "dependencies": {
     "@ember/-internals": "workspace:*",
     "@ember/application": "workspace:*",
-    "@ember/array": "workspace:*",
     "@ember/debug": "workspace:*",
     "@ember/object": "workspace:*",
     "@ember/runloop": "workspace:*",

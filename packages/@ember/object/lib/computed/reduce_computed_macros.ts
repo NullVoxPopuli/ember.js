@@ -6,11 +6,9 @@ import { assert } from '@ember/debug';
 import { autoComputed, isElementDescriptor } from '@ember/-internals/metal';
 import { computed, get } from '@ember/object';
 import { compare } from '@ember/utils';
-import EmberArray, { A as emberA, uniqBy as uniqByArray } from '@ember/array';
-import type { NativeArray } from '@ember/array';
 
-function isNativeOrEmberArray(obj: unknown): obj is unknown[] | EmberArray<unknown> {
-  return Array.isArray(obj) || EmberArray.detect(obj);
+function isNativeOrEmberArray(obj: unknown): obj is unknown[] {
+  return Array.isArray(obj);
 }
 
 function reduceMacro(
@@ -36,7 +34,7 @@ function reduceMacro(
 function arrayMacro(
   dependentKey: string,
   additionalDependentKeys: string[],
-  callback: (value: unknown[] | EmberArray<unknown>) => unknown[] | NativeArray<unknown>
+  callback: (value: unknown[]) => unknown[]
 ) {
   // This is a bit ugly
   let propertyName: string;
@@ -48,12 +46,7 @@ function arrayMacro(
   }
 
   return computed(dependentKey, ...additionalDependentKeys, function () {
-    let value = get(this, propertyName);
-    if (isNativeOrEmberArray(value)) {
-      return emberA(callback.call(this, value));
-    } else {
-      return emberA();
-    }
+    return [];
   }).readOnly() as PropertyDecorator;
 }
 
@@ -69,7 +62,7 @@ function multiArrayMacro(
   let dependentKeys = _dependentKeys.map((key) => `${key}.[]`);
 
   return computed(...dependentKeys, function () {
-    return emberA(callback.call(this, _dependentKeys));
+    return callback.call(this, _dependentKeys);
   }).readOnly() as PropertyDecorator;
 }
 

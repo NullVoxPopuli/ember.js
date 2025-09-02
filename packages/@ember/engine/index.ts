@@ -1,8 +1,6 @@
 export { getEngineParent, setEngineParent } from './parent';
 
 import { canInvoke } from '@ember/-internals/utils';
-import Controller from '@ember/controller';
-import Namespace from '@ember/application/namespace';
 import { Registry } from '@ember/-internals/container';
 import type { ResolverClass } from '@ember/-internals/container';
 import DAG from 'dag-map';
@@ -11,7 +9,6 @@ import ContainerDebugAdapter from '@ember/debug/container-debug-adapter';
 import { get, set } from '@ember/object';
 import type { EngineInstanceOptions } from '@ember/engine/instance';
 import EngineInstance from '@ember/engine/instance';
-import { RoutingService } from '@ember/routing/-internals';
 import { ComponentLookup } from '@ember/-internals/views';
 import { setupEngineRegistry } from '@ember/-internals/glimmer';
 import { RegistryProxyMixin } from '@ember/-internals/runtime';

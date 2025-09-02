@@ -1,6 +1,5 @@
 export { default as _Ember } from 'ember';
 
-import VERSION from 'ember/version';
 import * as _GlimmerSyntax from '@glimmer/syntax';
 
 export { default as precompile } from './system/precompile';
@@ -19,4 +18,4 @@ export type { EmberPrecompileOptions } from './types';
 export { preprocess as _preprocess, print as _print } from '@glimmer/syntax';
 export { precompile as _precompile } from '@glimmer/compiler';
 
-export { _GlimmerSyntax, VERSION };
+export { _GlimmerSyntax };

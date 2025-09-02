@@ -19,7 +19,6 @@ import {
 } from '@ember/-internals/metal';
 import Mixin, { applyMixin } from '@ember/object/mixin';
 import { ActionHandler } from '@ember/-internals/runtime';
-import makeArray from '@ember/array/make';
 import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 import { destroy, isDestroying, isDestroyed, registerDestructor } from '@glimmer/destroyable';
@@ -115,19 +114,6 @@ function initialize(obj: CoreObject, properties?: unknown) {
       let isDescriptor = possibleDesc !== undefined;
 
       if (!isDescriptor) {
-        if (
-          concatenatedProperties !== undefined &&
-          concatenatedProperties.length > 0 &&
-          concatenatedProperties.includes(keyName)
-        ) {
-          let baseValue = (obj as any)[keyName];
-          if (baseValue) {
-            value = makeArray(baseValue).concat(value);
-          } else {
-            value = makeArray(value);
-          }
-        }
-
         if (
           mergedProperties !== undefined &&
           mergedProperties.length > 0 &&

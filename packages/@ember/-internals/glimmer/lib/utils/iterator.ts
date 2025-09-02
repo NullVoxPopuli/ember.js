@@ -1,6 +1,5 @@
 import { objectAt } from '@ember/-internals/metal';
 import type EmberArray from '@ember/array';
-import { isEmberArray } from '@ember/array/-internals';
 import { isObject } from '@ember/-internals/utils';
 import type { Nullable } from '@ember/-internals/utility-types';
 import type { IteratorDelegate } from '@glimmer/reference';
@@ -21,7 +20,7 @@ function toEachInIterator(iterable: unknown) {
     return null;
   }
 
-  if (Array.isArray(iterable) || isEmberArray(iterable)) {
+  if (Array.isArray(iterable)) {
     return ObjectIterator.fromIndexable(iterable);
   } else if (isNativeIterable(iterable)) {
     return MapLikeNativeIterator.from(iterable as Iterable<[unknown, unknown]>);

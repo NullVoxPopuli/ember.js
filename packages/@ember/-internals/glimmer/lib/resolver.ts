@@ -40,7 +40,6 @@ import { default as readonly } from './helpers/readonly';
 import { default as unbound } from './helpers/unbound';
 import { default as uniqueId } from './helpers/unique-id';
 
-import { mountHelper } from './syntax/mount';
 import { outletHelper } from './syntax/outlet';
 
 function instrumentationPayload(name: string) {
@@ -96,7 +95,6 @@ export const BUILTIN_KEYWORD_HELPERS: Record<string, object> = {
   '-normalize-class': normalizeClassHelper,
   '-resolve': resolve,
   '-track-array': trackArray,
-  '-mount': mountHelper,
   '-outlet': outletHelper,
   '-in-el-null': inElementNullCheckHelper,
 };
