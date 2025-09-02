@@ -1,0 +1,14 @@
+import '../../@glimmer/opcode-compiler/index.js';
+import '../-internals/glimmer/lib/templates/root.js';
+import '../-internals/glimmer/lib/helper.js';
+export { htmlSafe, isHTMLSafe, isTrustedHTML, trustHTML } from '../-internals/glimmer/lib/utils/string.js';
+import '../-internals/glimmer/lib/renderer.js';
+import '../../shared-chunks/registry-CU7X7HvH.js';
+import '../debug/index.js';
+import '../../@glimmer/runtime/index.js';
+import '@embroider/macros';
+import '../runloop/index.js';
+import '../../@glimmer/reference/index.js';
+import '../../@glimmer/validator/index.js';
+import '../../@glimmer/manager/index.js';
+import '../-internals/glimmer/lib/helpers/unique-id.js';

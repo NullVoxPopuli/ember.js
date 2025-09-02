@@ -1,0 +1,13 @@
+export { templateFactory as template, templateCacheCounters } from '../../../@glimmer/opcode-compiler/index.js';
+export { default as RootTemplate } from './lib/templates/root.js';
+export { default as Helper, helper } from './lib/helper.js';
+export { SafeString, TrustedHTML, htmlSafe, isHTMLSafe, isTrustedHTML, trustHTML } from './lib/utils/string.js';
+export { Renderer, _resetRenderers, renderComponent, renderSettled } from './lib/renderer.js';
+export { getTemplate, getTemplates, hasTemplate, setTemplate, setTemplates } from './lib/template_registry.js';
+export { setupApplicationRegistry, setupEngineRegistry } from './lib/setup-registry.js';
+export { DOMChanges, DOMTreeConstruction, isSerializationFirstNode } from '../../../@glimmer/runtime/index.js';
+export { NodeDOMTreeConstruction } from '../../../@glimmer/node/index.js';
+export { default as OutletView } from './lib/views/outlet.js';
+export { setComponentManager } from './lib/utils/managers.js';
+export { uniqueId } from './lib/helpers/unique-id.js';
+export { componentCapabilities, modifierCapabilities } from '../../../@glimmer/manager/index.js';
