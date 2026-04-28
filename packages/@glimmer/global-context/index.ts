@@ -120,29 +120,16 @@ export let warnIfStyleNotTrusted: (value: unknown) => void;
  * Hook to customize assertion messages in the VM. Usages can be stripped out
  * by using the @glimmer/vm-babel-plugins package.
  */
-export let assert: (test: unknown, msg: string, options?: { id: string }) => asserts test;
+export let assert: (test: unknown, msg: string) => asserts test;
 
 export function debugAssert(
   test: unknown,
-  msg: string | (() => string),
-  options?: { id: string }
+  msg: string | (() => string)
 ): asserts test {
   if (DEBUG && assert) {
-    assert(test, typeof msg === 'string' ? msg : msg(), options);
+    assert(test, typeof msg === 'string' ? msg : msg());
   }
 }
-
-/**
- * Hook to customize deprecation messages in the VM. Usages can be stripped out
- * by using the @glimmer/vm-babel-plugins package.
- */
-export let deprecate: (
-  msg: string,
-  test: unknown,
-  options: {
-    id: string;
-  }
-) => void;
 
 //////////
 
@@ -157,27 +144,13 @@ export interface GlobalContext {
   getPath: (obj: object, path: string) => unknown;
   setPath: (obj: object, prop: string, value: unknown) => void;
   warnIfStyleNotTrusted: (value: unknown) => void;
-  assert: (test: unknown, msg: string, options?: { id: string }) => asserts test;
-  deprecate: (
-    msg: string,
-    test: unknown,
-    options: {
-      id: string;
-    }
-  ) => void;
+  assert: (test: unknown, msg: string) => asserts test;
 }
 
 let globalContextWasSet = false;
 
 export default function setGlobalContext(context: GlobalContext) {
-  if (DEBUG) {
-    if (globalContextWasSet) {
-      throw new Error('Attempted to set the global context twice. This should only be set once.');
-    }
-
-    globalContextWasSet = true;
-  }
-
+  globalContextWasSet = true;
   scheduleRevalidate = context.scheduleRevalidate;
   scheduleDestroy = context.scheduleDestroy;
   scheduleDestroyed = context.scheduleDestroyed;
@@ -189,23 +162,13 @@ export default function setGlobalContext(context: GlobalContext) {
   setPath = context.setPath;
   warnIfStyleNotTrusted = context.warnIfStyleNotTrusted;
   assert = context.assert;
-  deprecate = context.deprecate;
 }
 
-export let assertGlobalContextWasSet: (() => void) | undefined;
 export let testOverrideGlobalContext:
   | ((context: Partial<GlobalContext> | null) => GlobalContext | null)
   | undefined;
 
 if (DEBUG) {
-  assertGlobalContextWasSet = () => {
-    if (!globalContextWasSet) {
-      throw new Error(
-        'The global context for Glimmer VM was not set. You must set these global context functions to let Glimmer VM know how to accomplish certain operations. You can do this by importing `setGlobalContext` from `@glimmer/global-context`'
-      );
-    }
-  };
-
   testOverrideGlobalContext = (context: Partial<GlobalContext> | null) => {
     let originalGlobalContext = globalContextWasSet
       ? {
@@ -220,15 +183,10 @@ if (DEBUG) {
           setPath,
           warnIfStyleNotTrusted,
           assert,
-          deprecate,
         }
       : null;
 
-    if (context === null) {
-      globalContextWasSet = false;
-    } else {
-      globalContextWasSet = true;
-    }
+    globalContextWasSet = context !== null;
 
     // We use `undefined as any` here to unset the values when resetting the
     // context at the end of a test.
@@ -243,7 +201,6 @@ if (DEBUG) {
     setPath = context?.setPath || (undefined as any);
     warnIfStyleNotTrusted = context?.warnIfStyleNotTrusted || (undefined as any);
     assert = context?.assert || (undefined as any);
-    deprecate = context?.deprecate || (undefined as any);
 
     return originalGlobalContext;
   };
