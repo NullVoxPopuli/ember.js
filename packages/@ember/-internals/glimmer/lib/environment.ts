@@ -1,6 +1,5 @@
 import { ENV } from '@ember/-internals/environment';
 import { get, set, _getProp, _setProp } from '@ember/-internals/metal';
-import type { InternalOwner } from '@ember/-internals/owner';
 import { getDebugName } from '@ember/-internals/utils';
 import { constructStyleDeprecationMessage } from '@ember/-internals/views';
 import { assert, warn } from '@ember/debug';
@@ -77,10 +76,7 @@ if (DEBUG) {
 export class EmberEnvironmentDelegate implements EnvironmentDelegate {
   public enableDebugTooling: boolean = ENV._DEBUG_RENDER_TREE;
 
-  constructor(
-    public owner: InternalOwner,
-    public isInteractive: boolean
-  ) {}
+  constructor(public isInteractive: boolean) {}
 
   onTransactionCommit(): void {}
 }

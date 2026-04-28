@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-extraneous-class */
-import type { GlobalContext } from '@glimmer/global-context';
 import { testOverrideGlobalContext } from '@glimmer/global-context';
 import { jitSuite, RenderTest, test } from '@glimmer-workspace/integration-tests';
 
@@ -7,7 +6,7 @@ import { assert } from './support';
 import { DEBUG } from '@glimmer/env';
 
 let warnings = 0;
-let originalContext: GlobalContext | null;
+let originalContext: ReturnType<NonNullable<typeof testOverrideGlobalContext>>;
 
 class StyleWarningsTest extends RenderTest {
   static suiteName = 'Style attributes';

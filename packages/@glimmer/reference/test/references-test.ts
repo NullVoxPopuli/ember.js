@@ -1,7 +1,8 @@
 import { DEBUG } from '@glimmer/env';
-import type { GlobalContext } from '@glimmer/global-context';
 import { unwrap } from '@glimmer/debug-util';
 import { testOverrideGlobalContext } from '@glimmer/global-context';
+
+type SavedGlobalContext = ReturnType<NonNullable<typeof testOverrideGlobalContext>>;
 import {
   childRefFor,
   createComputeRef,
@@ -38,7 +39,7 @@ class TrackedDict<T> {
 }
 if (DEBUG) {
   module('References', (hooks) => {
-    let originalContext: GlobalContext | null;
+    let originalContext: SavedGlobalContext;
     let getCount = 0;
     let setCount = 0;
 
