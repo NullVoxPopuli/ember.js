@@ -6,6 +6,7 @@ export {
   type IteratorDelegate,
   type OpaqueIterationItem,
   type OpaqueIterator,
+  setIterableHooks,
 } from './lib/iterable';
 export {
   childRefFor,
@@ -25,6 +26,7 @@ export {
   REFERENCE,
   type Reference,
   type ReferenceEnvironment,
+  setReferenceHooks,
   TRUE_REFERENCE,
   UNDEFINED_REFERENCE,
   updateRef,

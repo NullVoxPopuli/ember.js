@@ -12,7 +12,6 @@
     "./error-handling": "./error-handling/index.ts",
     "./glimmer": "./glimmer/index.ts",
     "./glimmer/lib/components/internal": "./glimmer/lib/components/internal.ts",
-    "./glimmer/lib/utils/iterator": "./glimmer/lib/utils/iterator.ts",
     "./glimmer/lib/utils/string": "./glimmer/lib/utils/string.ts",
     "./glimmer/lib/utils/to-bool": "./glimmer/lib/utils/to-bool.ts",
     "./meta": "./meta/index.ts",

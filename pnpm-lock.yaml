@@ -1994,9 +1994,6 @@ importers:
 
   packages/@glimmer/reference:
     dependencies:
-      '@ember/-internals':
-        specifier: workspace:*
-        version: link:../../@ember/-internals
       '@glimmer/interfaces':
         specifier: workspace:*
         version: link:../interfaces

@@ -34,7 +34,6 @@
     "test:publint": "publint"
   },
   "dependencies": {
-    "@ember/-internals": "workspace:*",
     "@glimmer/interfaces": "workspace:*",
     "@glimmer/util": "workspace:*",
     "@glimmer/validator": "workspace:*"
