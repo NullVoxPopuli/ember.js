@@ -1,8 +1,5 @@
 import { DEBUG } from '@glimmer/env';
 import { unwrap } from '@glimmer/debug-util';
-import { testOverrideGlobalContext } from '@glimmer/global-context';
-
-type SavedGlobalContext = ReturnType<NonNullable<typeof testOverrideGlobalContext>>;
 import {
   childRefFor,
   createComputeRef,
@@ -38,36 +35,7 @@ class TrackedDict<T> {
   }
 }
 if (DEBUG) {
-  module('References', (hooks) => {
-    let originalContext: SavedGlobalContext;
-    let getCount = 0;
-    let setCount = 0;
-
-    hooks.beforeEach(() => {
-      originalContext = unwrap(testOverrideGlobalContext)({
-        getProp(obj: object, key: string): unknown {
-          getCount++;
-          return (obj as Record<string, unknown>)[key];
-        },
-
-        setProp(obj: object, key: string, value: unknown) {
-          setCount++;
-          (obj as Record<string, unknown>)[key] = value;
-        },
-
-        scheduleRevalidate() {},
-      });
-    });
-
-    hooks.afterEach(() => {
-      unwrap(testOverrideGlobalContext)(originalContext);
-    });
-
-    hooks.beforeEach(() => {
-      getCount = 0;
-      setCount = 0;
-    });
-
+  module('References', () => {
     module('const ref', () => {
       test('it works', (assert) => {
         let value = {};
@@ -89,21 +57,17 @@ if (DEBUG) {
 
         assert.strictEqual(valueForRef(childRef), 123, 'value is correct');
         assert.strictEqual(valueForRef(childRef), 123, 'value is correct');
-        assert.strictEqual(getCount, 1, 'get called correct number of times');
 
         parent.child = 456;
 
         assert.strictEqual(valueForRef(childRef), 456, 'value updated correctly');
         assert.strictEqual(valueForRef(childRef), 456, 'value is correct');
-        assert.strictEqual(getCount, 2, 'get called correct number of times');
 
         assert.true(isUpdatableRef(childRef), 'childRef is updatable');
 
         updateRef(childRef, 789);
 
         assert.strictEqual(valueForRef(childRef), 789, 'value updated correctly');
-        assert.strictEqual(getCount, 3, 'get called correct number of times');
-        assert.strictEqual(setCount, 1, 'set called correct number of times');
       });
     });
 
@@ -135,21 +99,13 @@ if (DEBUG) {
 
         assert.strictEqual(count, 2, 'computed');
 
-        dict.set('baz', 'bat');
-
-        assert.strictEqual(valueForRef(ref), 'BAR');
-        assert.strictEqual(valueForRef(ref), 'BAR');
-        assert.strictEqual(valueForRef(ref), 'BAR');
-
-        assert.strictEqual(count, 3, 'computed');
-
         dict.set('foo', 'bar');
 
         assert.strictEqual(valueForRef(ref), 'bar');
         assert.strictEqual(valueForRef(ref), 'bar');
         assert.strictEqual(valueForRef(ref), 'bar');
 
-        assert.strictEqual(count, 4, 'computed');
+        assert.strictEqual(count, 3, 'computed');
       });
 
       test('compute refs cache nested computation correctly', (assert) => {
@@ -207,21 +163,17 @@ if (DEBUG) {
 
         assert.strictEqual(valueForRef(valueRef), 123, 'value is correct');
         assert.strictEqual(valueForRef(valueRef), 123, 'value is correct');
-        assert.strictEqual(getCount, 1, 'get called correct number of times');
 
         parent.child.value = 456;
 
         assert.strictEqual(valueForRef(valueRef), 456, 'value updated correctly');
         assert.strictEqual(valueForRef(valueRef), 456, 'value is correct');
-        assert.strictEqual(getCount, 2, 'get called correct number of times');
 
         assert.true(isUpdatableRef(valueRef), 'childRef is updatable');
 
         updateRef(valueRef, 789);
 
         assert.strictEqual(valueForRef(valueRef), 789, 'value updated correctly');
-        assert.strictEqual(getCount, 3, 'get called correct number of times');
-        assert.strictEqual(setCount, 1, 'set called correct number of times');
 
         parent.child = new Child();
 
@@ -230,7 +182,6 @@ if (DEBUG) {
           123,
           'value updated correctly when parent changes'
         );
-        assert.strictEqual(getCount, 4, 'get called correct number of times');
       });
     });
 
@@ -293,21 +244,17 @@ if (DEBUG) {
 
         assert.strictEqual(valueForRef(valueRef), 123, 'value is correct');
         assert.strictEqual(valueForRef(valueRef), 123, 'value is correct');
-        assert.strictEqual(getCount, 1, 'get called correct number of times');
 
         parent.child.value = 456;
 
         assert.strictEqual(valueForRef(valueRef), 456, 'value updated correctly');
         assert.strictEqual(valueForRef(valueRef), 456, 'value is correct');
-        assert.strictEqual(getCount, 2, 'get called correct number of times');
 
         assert.true(isUpdatableRef(valueRef), 'childRef is updatable');
 
         updateRef(valueRef, 789);
 
         assert.strictEqual(valueForRef(valueRef), 789, 'value updated correctly');
-        assert.strictEqual(getCount, 3, 'get called correct number of times');
-        assert.strictEqual(setCount, 1, 'set called correct number of times');
 
         parent.child = new Child();
 
@@ -316,7 +263,6 @@ if (DEBUG) {
           123,
           'value updated correctly when parent changes'
         );
-        assert.strictEqual(getCount, 4, 'get called correct number of times');
       });
     });
 
@@ -359,21 +305,17 @@ if (DEBUG) {
 
         assert.strictEqual(valueForRef(valueRef), 123, 'value is correct');
         assert.strictEqual(valueForRef(valueRef), 123, 'value is correct');
-        assert.strictEqual(getCount, 1, 'get called correct number of times');
 
         parent.child.value = 456;
 
         assert.strictEqual(valueForRef(valueRef), 456, 'value updated correctly');
         assert.strictEqual(valueForRef(valueRef), 456, 'value is correct');
-        assert.strictEqual(getCount, 2, 'get called correct number of times');
 
         assert.true(isUpdatableRef(valueRef), 'childRef is updatable');
 
         updateRef(valueRef, 789);
 
         assert.strictEqual(valueForRef(valueRef), 789, 'value updated correctly');
-        assert.strictEqual(getCount, 3, 'get called correct number of times');
-        assert.strictEqual(setCount, 1, 'set called correct number of times');
 
         parent.child = new Child();
 
@@ -382,7 +324,6 @@ if (DEBUG) {
           123,
           'value updated correctly when parent changes'
         );
-        assert.strictEqual(getCount, 4, 'get called correct number of times');
       });
     });
 

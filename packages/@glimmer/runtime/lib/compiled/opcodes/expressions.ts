@@ -37,9 +37,10 @@ import {
   CheckNullable,
   CheckOr,
 } from '@glimmer/debug';
+import toBool from '@ember/-internals/glimmer/lib/utils/to-bool';
 import { debugToString, assert } from '@glimmer/debug-util';
 import { _hasDestroyableChildren, associateDestroyableChild, destroy } from '@glimmer/destroyable';
-import { debugAssert, toBool } from '@glimmer/global-context';
+import { debugAssert } from '@glimmer/global-context';
 import { getInternalHelperManager } from '@glimmer/manager';
 import {
   childRefFor,

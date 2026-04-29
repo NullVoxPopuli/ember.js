@@ -1,32 +1,28 @@
 /* eslint-disable @typescript-eslint/no-extraneous-class */
-import { testOverrideGlobalContext } from '@glimmer/global-context';
+import { registerWarnHandler } from '@ember/debug';
 import { jitSuite, RenderTest, test } from '@glimmer-workspace/integration-tests';
 
 import { assert } from './support';
 import { DEBUG } from '@glimmer/env';
 
 let warnings = 0;
-let originalContext: ReturnType<NonNullable<typeof testOverrideGlobalContext>>;
 
 class StyleWarningsTest extends RenderTest {
   static suiteName = 'Style attributes';
 
   beforeEach() {
     warnings = 0;
-    originalContext =
-      testOverrideGlobalContext?.({
-        warnIfStyleNotTrusted() {
-          warnings++;
-        },
-
-        getProp(obj, key) {
-          return (obj as Record<string, unknown>)[key];
-        },
-      }) ?? null;
+    registerWarnHandler((_message, options, next) => {
+      if (options?.id === 'ember-htmlbars.style-xss-warning') {
+        warnings++;
+      } else {
+        next(_message, options);
+      }
+    });
   }
 
   afterEach() {
-    testOverrideGlobalContext?.(originalContext);
+    registerWarnHandler((message, options, next) => next(message, options));
   }
 
   @test

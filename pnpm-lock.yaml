@@ -1312,6 +1312,9 @@ importers:
 
   packages/@glimmer-workspace/integration-tests:
     dependencies:
+      '@ember/debug':
+        specifier: workspace:*
+        version: link:../../@ember/debug
       '@glimmer-workspace/test-utils':
         specifier: workspace:*
         version: link:../test-utils
@@ -2015,6 +2018,9 @@ importers:
 
   packages/@glimmer/reference:
     dependencies:
+      '@ember/-internals':
+        specifier: workspace:*
+        version: link:../../@ember/-internals
       '@glimmer/global-context':
         specifier: workspace:*
         version: link:../global-context
@@ -2071,6 +2077,12 @@ importers:
 
   packages/@glimmer/runtime:
     dependencies:
+      '@ember/-internals':
+        specifier: workspace:*
+        version: link:../../@ember/-internals
+      '@ember/debug':
+        specifier: workspace:*
+        version: link:../../@ember/debug
       '@glimmer/destroyable':
         specifier: workspace:*
         version: link:../destroyable
@@ -2234,6 +2246,9 @@ importers:
 
   packages/@glimmer/validator:
     dependencies:
+      '@ember/debug':
+        specifier: workspace:*
+        version: link:../../@ember/debug
       '@glimmer/global-context':
         specifier: workspace:*
         version: link:../global-context

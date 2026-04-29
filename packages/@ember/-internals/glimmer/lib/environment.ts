@@ -1,16 +1,11 @@
 import { ENV } from '@ember/-internals/environment';
-import { get, set, _getProp, _setProp } from '@ember/-internals/metal';
 import { getDebugName } from '@ember/-internals/utils';
-import { constructStyleDeprecationMessage } from '@ember/-internals/views';
-import { assert, warn } from '@ember/debug';
 import { schedule, _backburner } from '@ember/runloop';
 import { DEBUG } from '@glimmer/env';
 import setGlobalContext from '@glimmer/global-context';
 import type { EnvironmentDelegate } from '@glimmer/runtime';
 import { debug } from '@glimmer/validator';
 import toIterator from './utils/iterator';
-import { isHTMLSafe } from './utils/string';
-import toBool from './utils/to-bool';
 
 ///////////
 
@@ -21,13 +16,7 @@ setGlobalContext({
     _backburner.ensureInstance();
   },
 
-  toBool,
   toIterator,
-
-  getProp: _getProp,
-  setProp: _setProp,
-  getPath: get,
-  setPath: set,
 
   scheduleDestroy(destroyable, destructor) {
     schedule('actions', null, destructor, destroyable);
@@ -35,25 +24,6 @@ setGlobalContext({
 
   scheduleDestroyed(finalizeDestructor) {
     schedule('destroy', null, finalizeDestructor);
-  },
-
-  warnIfStyleNotTrusted(value: unknown) {
-    warn(
-      constructStyleDeprecationMessage(String(value)),
-      (() => {
-        if (value === null || value === undefined || isHTMLSafe(value)) {
-          return true;
-        }
-        return false;
-      })(),
-      { id: 'ember-htmlbars.style-xss-warning' }
-    );
-  },
-
-  assert(test: unknown, msg: string) {
-    if (DEBUG) {
-      assert(msg, test);
-    }
   },
 });
 
