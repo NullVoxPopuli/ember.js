@@ -1,7 +1,7 @@
+import toIterator from '@ember/-internals/glimmer/lib/utils/iterator';
 import { get as getPath } from '@ember/-internals/metal';
 import { DEBUG } from '@glimmer/env';
 import type { Dict, Nullable } from '@glimmer/interfaces';
-import { toIterator } from '@glimmer/global-context';
 import { EMPTY_ARRAY, isIndexable } from '@glimmer/util';
 import { consumeTag, createTag, dirtyTag } from '@glimmer/validator';
 

@@ -233,7 +233,7 @@ export function childRefFor(_parentRef: Reference, path: string): Reference {
         const parent = valueForRef(parentRef);
 
         if (isDict(parent)) {
-          return setProp(parent, path, val);
+          setProp(parent, path, val);
         }
       }
     );

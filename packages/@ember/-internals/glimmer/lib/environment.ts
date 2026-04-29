@@ -5,7 +5,6 @@ import { DEBUG } from '@glimmer/env';
 import setGlobalContext from '@glimmer/global-context';
 import type { EnvironmentDelegate } from '@glimmer/runtime';
 import { debug } from '@glimmer/validator';
-import toIterator from './utils/iterator';
 
 ///////////
 
@@ -15,8 +14,6 @@ setGlobalContext({
   scheduleRevalidate() {
     _backburner.ensureInstance();
   },
-
-  toIterator,
 
   scheduleDestroy(destroyable, destructor) {
     schedule('actions', null, destructor, destroyable);
