@@ -1,9 +1,0 @@
-{
-  "name": "@glimmer/global-context",
-  "private": true,
-  "type": "module",
-  "exports": "./index.ts",
-  "devDependencies": {
-    "@glimmer/env": "workspace:*"
-  }
-}

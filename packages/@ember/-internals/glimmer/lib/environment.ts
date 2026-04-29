@@ -1,28 +1,16 @@
 import { ENV } from '@ember/-internals/environment';
 import { getDebugName } from '@ember/-internals/utils';
 import { schedule, _backburner } from '@ember/runloop';
+import { setDestructionSchedulers } from '@glimmer/destroyable';
 import { DEBUG } from '@glimmer/env';
-import setGlobalContext from '@glimmer/global-context';
 import type { EnvironmentDelegate } from '@glimmer/runtime';
-import { debug } from '@glimmer/validator';
+import { debug, setScheduleRevalidate } from '@glimmer/validator';
 
-///////////
-
-// Setup global context
-
-setGlobalContext({
-  scheduleRevalidate() {
-    _backburner.ensureInstance();
-  },
-
-  scheduleDestroy(destroyable, destructor) {
-    schedule('actions', null, destructor, destroyable);
-  },
-
-  scheduleDestroyed(finalizeDestructor) {
-    schedule('destroy', null, finalizeDestructor);
-  },
-});
+setScheduleRevalidate(() => _backburner.ensureInstance());
+setDestructionSchedulers(
+  (destroyable, destructor) => schedule('actions', null, destructor, destroyable),
+  (finalizer) => schedule('destroy', null, finalizer)
+);
 
 if (DEBUG) {
   debug?.setTrackingTransactionEnv?.({
@@ -35,10 +23,6 @@ if (DEBUG) {
     },
   });
 }
-
-///////////
-
-// Define environment delegate
 
 export class EmberEnvironmentDelegate implements EnvironmentDelegate {
   public enableDebugTooling: boolean = ENV._DEBUG_RENDER_TREE;

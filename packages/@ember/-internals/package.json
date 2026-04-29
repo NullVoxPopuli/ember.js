@@ -51,7 +51,6 @@
     "@glimmer/component": "workspace:*",
     "@glimmer/destroyable": "workspace:*",
     "@glimmer/env": "workspace:*",
-    "@glimmer/global-context": "workspace:*",
     "@glimmer/interfaces": "workspace:*",
     "@glimmer/manager": "workspace:*",
     "@glimmer/node": "workspace:*",

@@ -11,8 +11,6 @@ import { consumeTag } from '@glimmer/validator';
 import { EachInWrapper } from './each-in-wrapper';
 import { internalHelper } from './internal-helper';
 
-export { EachInWrapper };
-
 /**
   The `{{#each}}` helper loops over elements in a collection. It is an extension
   of the base Handlebars `{{#each}}` helper.
