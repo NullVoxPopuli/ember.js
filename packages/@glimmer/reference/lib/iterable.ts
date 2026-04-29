@@ -1,3 +1,5 @@
+import { get as getPath } from '@ember/-internals/metal';
+import toIterator from '@ember/-internals/glimmer/lib/utils/iterator';
 import { DEBUG } from '@glimmer/env';
 import type { Dict, Nullable } from '@glimmer/interfaces';
 import { EMPTY_ARRAY, isIndexable } from '@glimmer/util';
@@ -24,16 +26,6 @@ export type OpaqueIterator = AbstractIterator<unknown, unknown, OpaqueIterationI
 export interface IteratorDelegate {
   isEmpty(): boolean;
   next(): { value: unknown; memo: unknown } | null;
-}
-
-let toIterator: (value: unknown) => IteratorDelegate | null = () => null;
-let getPath: (obj: object, path: string) => unknown = () => undefined;
-export function setIterableHooks(
-  iterator: typeof toIterator,
-  path: typeof getPath
-): void {
-  toIterator = iterator;
-  getPath = path;
 }
 
 export interface IteratorReferenceEnvironment extends ReferenceEnvironment {

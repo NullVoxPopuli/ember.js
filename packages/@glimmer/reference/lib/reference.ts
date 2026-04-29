@@ -10,18 +10,9 @@ import type {
   UnboundReference,
 } from '@glimmer/interfaces';
 import type { Revision, Tag } from '@glimmer/validator';
+import { _getProp as getProp, _setProp as setProp } from '@ember/-internals/metal';
 import { expect } from '@glimmer/debug-util';
 import { isDict } from '@glimmer/util';
-
-let getProp: (obj: object, key: string) => unknown = () => undefined;
-let setProp: (obj: object, key: string, value: unknown) => void = () => {};
-export function setReferenceHooks(
-  get: typeof getProp,
-  set: typeof setProp
-): void {
-  getProp = get;
-  setProp = set;
-}
 import {
   CONSTANT_TAG,
   consumeTag,
