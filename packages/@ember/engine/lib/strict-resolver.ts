@@ -1,4 +1,6 @@
 import type { Factory, Resolver } from '@ember/-internals/owner';
+import type Engine from '..';
+import { assert } from '@ember/debug';
 
 export class StrictResolver implements Resolver {
   // Ember's router uses this flag to decide whether to auto-generate
@@ -9,6 +11,12 @@ export class StrictResolver implements Resolver {
 
   #modules = new Map<string, unknown>();
   original: any;
+
+  static create({ namespace }: { namespace: Engine }): StrictResolver {
+    assert(`<Application#modules> must be set when using the StrictResolver`, namespace.modules);
+
+    return new StrictResolver(namespace.modules);
+  }
 
   constructor(modules: Record<string, unknown>) {
     this.addModules(modules);
