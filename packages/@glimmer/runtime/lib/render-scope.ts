@@ -171,9 +171,7 @@ export function getCurrentRenderScope(): RenderScope | undefined {
 
 export function addToCurrentRenderScope(entry: unknown): void {
   if (CURRENT_TRACKER === undefined) {
-    throw new Error(
-      'addToScope() may only be called while rendering -- there is no active scope.'
-    );
+    throw new Error('addToScope() may only be called while rendering -- there is no active scope.');
   }
   CURRENT_TRACKER.addToCurrentScope(entry);
 }
