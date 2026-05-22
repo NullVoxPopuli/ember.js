@@ -474,6 +474,12 @@ export {
   renderComponent,
   type View,
 } from './lib/renderer';
+// RFC #1154 -- public render-tree scope API
+export {
+  getCurrentRenderScope as getScope,
+  addToCurrentRenderScope as addToScope,
+  type RenderScope as Scope,
+} from '@glimmer/runtime/lib/render-scope';
 export {
   getTemplate,
   setTemplate,

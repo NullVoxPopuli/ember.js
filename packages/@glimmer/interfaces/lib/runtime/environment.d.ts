@@ -47,8 +47,25 @@ export interface Environment {
 
   isInteractive: boolean;
   debugRenderTree?: DebugRenderTree | undefined;
+  // Public render-tree scope tracker (RFC #1154). Unlike debugRenderTree this
+  // is always present, because it backs the user-facing
+  // `getScope` / `addToScope` API.
+  renderScope: RenderScopeTracker;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   isArgumentCaptureError?: ((error: any) => boolean) | undefined;
+}
+
+export interface RenderScope {
+  readonly entries: Iterable<unknown>;
+}
+
+export interface RenderScopeTracker {
+  create(bucket: object): void;
+  enter(bucket: object): void;
+  exit(): void;
+  willDestroy(bucket: object): void;
+  getCurrentScope(): RenderScope | undefined;
+  addToCurrentScope(entry: unknown): void;
 }
 
 export interface RuntimeOptions {

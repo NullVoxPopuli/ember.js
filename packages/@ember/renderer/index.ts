@@ -80,3 +80,43 @@ export { renderSettled } from '@ember/-internals/glimmer/lib/renderer';
  * @public
  */
 export { renderComponent } from '@ember/-internals/glimmer/lib/renderer';
+
+/**
+ * Returns the current render-tree scope, or `undefined` if called outside of
+ * rendering.
+ *
+ * See [RFC #1154](https://github.com/emberjs/rfcs/pull/1154) for the motivation
+ * and the userland patterns this primitive enables (notably component-tree
+ * `provide` / `consume`).
+ *
+ * The returned `Scope` exposes `entries`, an iterable that walks the current
+ * scope's own additions, then up through each ancestor render node. Anything
+ * pushed onto the scope via `addToScope` becomes visible here.
+ *
+ * `getScope()` is synchronous and is only valid during render. After an
+ * `await`, you must capture the scope (or the specific entries you need)
+ * before the microtask boundary.
+ *
+ * @method getScope
+ * @static
+ * @for @ember/renderer
+ * @returns {Scope | undefined} the current scope, or `undefined` when called outside of rendering.
+ * @public
+ */
+export { getCurrentRenderScope as getScope } from '@glimmer/runtime/lib/render-scope';
+
+/**
+ * Adds an entry to the current render-tree scope so descendants can find it
+ * via `getScope()`. Throws when called outside of rendering.
+ *
+ * See [RFC #1154](https://github.com/emberjs/rfcs/pull/1154).
+ *
+ * @method addToScope
+ * @static
+ * @for @ember/renderer
+ * @param {unknown} entry the value to expose to descendants.
+ * @public
+ */
+export { addToCurrentRenderScope as addToScope } from '@glimmer/runtime/lib/render-scope';
+
+export type { RenderScope as Scope } from '@glimmer/runtime/lib/render-scope';
