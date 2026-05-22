@@ -14,26 +14,29 @@ import GlimmerishComponent from '../utils/glimmerish-component';
 import { run } from '@ember/runloop';
 import { associateDestroyableChild, registerDestructor } from '@glimmer/destroyable';
 import { renderComponent } from '../../lib/renderer';
-import {
-  addToCurrentRenderScope as addToScope,
-  getCurrentRenderScope as getScope,
-} from '@glimmer/runtime/lib/render-scope';
+import { makeContext } from '../../lib/make-context';
+import { tracked } from '@glimmer/tracking';
 import type Owner from '@ember/owner';
 
 /**
- * Coverage for the render-tree scope primitives proposed in RFC #1154
- * ( https://github.com/emberjs/rfcs/pull/1154 ).
+ * Coverage for `makeContext` (the user-facing API discussed in
+ * https://github.com/emberjs/rfcs/pull/1154 -- NullVoxPopuli's
+ * `makeContext(Klass)` proposal returning `{ Provide, consume }`).
  *
- * These tests pin down the two things consumers actually rely on:
+ * The tests below pin down the semantics that real consumers care about:
  *
- *   1. `getScope()` is only defined while rendering, and returns a Scope whose
- *      `entries` walks from the current render node up through each ancestor.
- *   2. A userland `provide` / `consume` built on `addToScope` + `getScope`
- *      finds the nearest provider, which is the building block for any
- *      component-tree context implementation.
+ *   1. `<Context.Provide>` produces a fresh instance per render, which
+ *      descendants can read via `context.consume()` or `(context.consume)`.
+ *   2. `consume()` finds the *nearest* enclosing `<Provide>`.
+ *   3. `consume()` throws when called outside a render OR when no provider
+ *      is in the tree -- a missing provider is a bug, not a default.
+ *   4. Each `<Provide>` has its own instance: providing the same class
+ *      twice does not share state across providers.
+ *   5. `@tracked` state on the provided value flows reactively to
+ *      consumers.
  */
 
-class RenderTreeScopeTestCase extends AbstractStrictTestCase {
+class MakeContextTestCase extends AbstractStrictTestCase {
   owner: Owner;
 
   constructor(assert: QUnit['assert']) {
@@ -60,163 +63,188 @@ class RenderTreeScopeTestCase extends AbstractStrictTestCase {
 }
 
 moduleFor(
-  'RFC #1154 -- render-tree scope primitives',
-  class extends RenderTreeScopeTestCase {
+  'RFC #1154 -- makeContext: render-tree-scoped context',
+  class extends MakeContextTestCase {
     afterEach() {
       runDestroy(this);
     }
 
-    '@test getScope() returns undefined outside of rendering'(assert: QUnit['assert']) {
-      assert.strictEqual(getScope(), undefined, 'no active scope before render');
+    '@test consume() throws if called outside of rendering'(assert: QUnit['assert']) {
+      class Theme {
+        color = 'dark';
+      }
+      const theme = makeContext(Theme);
 
-      let Foo = setComponentTemplate(precompileTemplate('hi'), templateOnly());
-      this.renderComponent(Foo);
-
-      assertHTML('hi');
-      assert.strictEqual(getScope(), undefined, 'no active scope after commit');
-    }
-
-    '@test addToScope() throws when called outside of rendering'(assert: QUnit['assert']) {
       assert.throws(
-        () => addToScope('nope'),
-        /addToScope/,
-        'addToScope rejects calls made outside a render'
+        () => theme.consume(),
+        /outside of rendering/,
+        'consume() outside a render is rejected'
       );
     }
 
-    "@test a function captured at render time sees the caller's scope entries via getScope()"(
-      assert: QUnit['assert']
-    ) {
-      let collected: unknown[] = [];
+    '@test consume() throws when no <Provide> exists in the tree'(assert: QUnit['assert']) {
+      class Theme {
+        color = 'dark';
+      }
+      const theme = makeContext(Theme);
 
+      let error: Error | undefined;
       class Reader extends GlimmerishComponent {
         constructor(owner: Owner, args: Record<string, unknown>) {
           super(owner, args);
-          let scope = getScope();
-          assert.ok(scope, 'scope is defined during component construction');
-          if (scope) {
-            for (let entry of scope.entries) {
-              collected.push(entry);
-            }
+          try {
+            theme.consume();
+          } catch (e) {
+            error = e as Error;
           }
         }
       }
-      setComponentTemplate(precompileTemplate('done'), Reader);
+      setComponentTemplate(precompileTemplate(''), Reader);
 
-      class Provider extends GlimmerishComponent {
-        constructor(owner: Owner, args: Record<string, unknown>) {
-          super(owner, args);
-          addToScope({ kind: 'theme', value: 'dark' });
-          addToScope({ kind: 'locale', value: 'en' });
-        }
-      }
-      setComponentTemplate(
+      let Root = setComponentTemplate(
         precompileTemplate('<Reader/>', {
           strictMode: true,
           scope: () => ({ Reader }),
-        }),
-        Provider
-      );
-
-      let Root = setComponentTemplate(
-        precompileTemplate('<Provider/>', {
-          strictMode: true,
-          scope: () => ({ Provider }),
         }),
         templateOnly()
       );
 
       this.renderComponent(Root);
-      assertHTML('done');
 
-      // Entries iterate most-recent-first within a node, then walk up.
-      // Reader's own scope is empty, so we should see the two entries from
-      // Provider in reverse insertion order.
-      assert.deepEqual(
-        collected,
-        [
-          { kind: 'locale', value: 'en' },
-          { kind: 'theme', value: 'dark' },
-        ],
-        'consumer iterates its parent provider entries newest-first'
+      assert.ok(error, 'consume() raised');
+      assert.ok(
+        /No matching `<Provide>`/.test(error?.message ?? ''),
+        `error mentions missing provider, got: ${error?.message}`
       );
     }
 
-    '@test consumer finds the nearest provider (component-tree context pattern)'(
-      assert: QUnit['assert']
-    ) {
-      let observed: string[] = [];
-
-      class ThemeKey {}
-      const THEME = new ThemeKey();
-
-      function provideTheme(value: string) {
-        addToScope([THEME, value]);
+    '@test <Provide> + consume() returns the nearest enclosing instance'(assert: QUnit['assert']) {
+      let id = 0;
+      class Counter {
+        id = id++;
       }
+      const counter = makeContext(Counter);
 
-      function consumeTheme(): string | undefined {
-        let scope = getScope();
-        if (!scope) return undefined;
-        for (let entry of scope.entries) {
-          if (Array.isArray(entry) && entry[0] === THEME) {
-            return entry[1] as string;
-          }
-        }
-        return undefined;
-      }
+      let seen: number[] = [];
 
       class Reader extends GlimmerishComponent {
         constructor(owner: Owner, args: Record<string, unknown>) {
           super(owner, args);
-          observed.push(consumeTheme() ?? 'none');
+          seen.push(counter.consume().id);
         }
       }
       setComponentTemplate(precompileTemplate('r'), Reader);
 
-      class Inner extends GlimmerishComponent {
-        constructor(owner: Owner, args: Record<string, unknown>) {
-          super(owner, args);
-          provideTheme('dark');
-        }
-      }
-      setComponentTemplate(
-        precompileTemplate('<Reader/>', {
-          strictMode: true,
-          scope: () => ({ Reader }),
-        }),
-        Inner
+      let Root = setComponentTemplate(
+        precompileTemplate(
+          // Inner <Provide> shadows the outer one. Three readers, three
+          // distinct provider scopes -- each should see the nearest.
+          '<counter.Provide><Reader/><counter.Provide><Reader/></counter.Provide><Reader/></counter.Provide>',
+          {
+            strictMode: true,
+            scope: () => ({ Reader, counter }),
+          }
+        ),
+        templateOnly()
       );
 
-      class Outer extends GlimmerishComponent {
+      this.renderComponent(Root);
+      assertHTML('rrr');
+
+      assert.deepEqual(
+        seen,
+        [0, 1, 0],
+        'each Reader saw its nearest <Provide>: outer (id 0), inner (id 1), outer again (id 0)'
+      );
+    }
+
+    '@test factory form: makeContext(() => value)'(assert: QUnit['assert']) {
+      // Plain factory -- no class.
+      let made = 0;
+      const cfg = makeContext(() => {
+        made++;
+        return { label: 'hello' };
+      });
+
+      let observed: string | undefined;
+      class Reader extends GlimmerishComponent {
         constructor(owner: Owner, args: Record<string, unknown>) {
           super(owner, args);
-          provideTheme('light');
+          observed = cfg.consume().label;
         }
       }
-      setComponentTemplate(
-        precompileTemplate('<Reader/><Inner/><Reader/>', {
-          strictMode: true,
-          scope: () => ({ Inner, Reader }),
-        }),
-        Outer
-      );
+      setComponentTemplate(precompileTemplate('r'), Reader);
 
       let Root = setComponentTemplate(
-        precompileTemplate('<Reader/><Outer/>', {
+        precompileTemplate('<cfg.Provide><Reader/></cfg.Provide>', {
           strictMode: true,
-          scope: () => ({ Outer, Reader }),
+          scope: () => ({ Reader, cfg }),
         }),
         templateOnly()
       );
 
       this.renderComponent(Root);
-      assertHTML('rrrr');
 
-      assert.deepEqual(
-        observed,
-        ['none', 'light', 'dark', 'light'],
-        'each Reader sees the nearest enclosing provider, falling back to undefined at the root'
+      assert.strictEqual(made, 1, 'factory ran exactly once');
+      assert.strictEqual(observed, 'hello', 'consumer saw the factory-produced value');
+    }
+
+    '@test (context.consume) is usable as a template helper'(assert: QUnit['assert']) {
+      class Theme {
+        color = 'dark';
+      }
+      const theme = makeContext(Theme);
+
+      let Root = setComponentTemplate(
+        precompileTemplate(
+          '<theme.Provide>{{#let (theme.consume) as |t|}}{{t.color}}{{/let}}</theme.Provide>',
+          {
+            strictMode: true,
+            scope: () => ({ theme }),
+          }
+        ),
+        templateOnly()
       );
+
+      this.renderComponent(Root);
+      assertHTML('dark');
+      assert.ok(true);
+    }
+
+    '@test @tracked state on the provided value is reactive'(assert: QUnit['assert']) {
+      class Counter {
+        @tracked count = 0;
+      }
+      const counter = makeContext(Counter);
+
+      let captured: Counter | undefined;
+      class Capture extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          captured = counter.consume();
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), Capture);
+
+      let Root = setComponentTemplate(
+        precompileTemplate(
+          '<counter.Provide><Capture/>{{#let (counter.consume) as |c|}}{{c.count}}{{/let}}</counter.Provide>',
+          {
+            strictMode: true,
+            scope: () => ({ Capture, counter }),
+          }
+        ),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assertHTML('0');
+
+      assert.ok(captured, 'Capture observed the instance');
+      run(() => {
+        captured!.count = 5;
+      });
+      assertHTML('5');
     }
   }
 );

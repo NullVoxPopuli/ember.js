@@ -82,41 +82,54 @@ export { renderSettled } from '@ember/-internals/glimmer/lib/renderer';
 export { renderComponent } from '@ember/-internals/glimmer/lib/renderer';
 
 /**
- * Returns the current render-tree scope, or `undefined` if called outside of
- * rendering.
+ * Creates a render-tree-scoped context (provide/consume) for sharing values
+ * with descendant components without prop drilling.
  *
- * See [RFC #1154](https://github.com/emberjs/rfcs/pull/1154) for the motivation
- * and the userland patterns this primitive enables (notably component-tree
- * `provide` / `consume`).
+ * See [RFC #1154](https://github.com/emberjs/rfcs/pull/1154) and the original
+ * [Context RFC #975](https://github.com/emberjs/rfcs/pull/975).
  *
- * The returned `Scope` exposes `entries`, an iterable that walks the current
- * scope's own additions, then up through each ancestor render node. Anything
- * pushed onto the scope via `addToScope` becomes visible here.
+ * `makeContext` returns an object with:
  *
- * `getScope()` is synchronous and is only valid during render. After an
- * `await`, you must capture the scope (or the specific entries you need)
- * before the microtask boundary.
+ * - `Provide`: a component that, on every render, produces a fresh value
+ *    from the given class or factory and exposes it to every descendant in
+ *    the block.
+ * - `consume()`: a function (also usable as a template helper) that returns
+ *    the nearest enclosing provided value. **Throws** if there is no
+ *    matching provider higher in the render tree, or if called outside of
+ *    rendering.
  *
- * @method getScope
+ * ```gjs
+ * import { makeContext } from '@ember/renderer';
+ *
+ * class Theme {
+ *   color = 'dark';
+ * }
+ *
+ * const theme = makeContext(Theme);
+ *
+ * <template>
+ *   <theme.Provide>
+ *     {{#let (theme.consume) as |t|}}
+ *       {{t.color}} {{! "dark" }}
+ *     {{/let}}
+ *   </theme.Provide>
+ *
+ *   {{ (theme.consume) }} {{! throws -- no provider }}
+ * </template>
+ * ```
+ *
+ * Reactivity: the *value* returned by the factory is not itself tracked,
+ * but `@tracked` state on it is — mutating tracked fields invalidates
+ * consumers as expected.
+ *
+ * @method makeContext
  * @static
  * @for @ember/renderer
- * @returns {Scope | undefined} the current scope, or `undefined` when called outside of rendering.
+ * @param {Function} factory A zero-arg class or factory function that
+ *   produces a fresh value each time `<Provide>` is rendered.
+ * @returns {Object} `{ Provide, consume }`
  * @public
  */
-export { getCurrentRenderScope as getScope } from '@glimmer/runtime/lib/render-scope';
+export { makeContext } from '@ember/-internals/glimmer/lib/make-context';
 
-/**
- * Adds an entry to the current render-tree scope so descendants can find it
- * via `getScope()`. Throws when called outside of rendering.
- *
- * See [RFC #1154](https://github.com/emberjs/rfcs/pull/1154).
- *
- * @method addToScope
- * @static
- * @for @ember/renderer
- * @param {unknown} entry the value to expose to descendants.
- * @public
- */
-export { addToCurrentRenderScope as addToScope } from '@glimmer/runtime/lib/render-scope';
-
-export type { RenderScope as Scope } from '@glimmer/runtime/lib/render-scope';
+export type { Context, ContextFactory } from '@ember/-internals/glimmer/lib/make-context';

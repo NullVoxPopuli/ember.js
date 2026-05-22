@@ -7,7 +7,6 @@
     "./*": "./*.ts"
   },
   "dependencies": {
-    "@ember/-internals": "workspace:*",
-    "@glimmer/runtime": "workspace:*"
+    "@ember/-internals": "workspace:*"
   }
 }

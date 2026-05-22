@@ -963,9 +963,6 @@ importers:
       '@ember/-internals':
         specifier: workspace:*
         version: link:../-internals
-      '@glimmer/runtime':
-        specifier: workspace:*
-        version: link:../../@glimmer/runtime
 
   packages/@ember/routing:
     dependencies:
