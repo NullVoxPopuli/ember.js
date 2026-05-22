@@ -215,23 +215,22 @@ moduleFor(
       class Counter {
         @tracked count = 0;
       }
-      const counter = makeContext(Counter);
-
+      // Capture the instance via the factory itself -- that runs exactly
+      // once per <Provide>, so there is no need for a separate "Capture"
+      // component (which would add an empty comment-marker to the output).
       let captured: Counter | undefined;
-      class Capture extends GlimmerishComponent {
-        constructor(owner: Owner, args: Record<string, unknown>) {
-          super(owner, args);
-          captured = counter.consume();
-        }
-      }
-      setComponentTemplate(precompileTemplate(''), Capture);
+      const counter = makeContext(() => {
+        const c = new Counter();
+        captured = c;
+        return c;
+      });
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          '<counter.Provide><Capture/>{{#let (counter.consume) as |c|}}{{c.count}}{{/let}}</counter.Provide>',
+          '<counter.Provide>{{#let (counter.consume) as |c|}}{{c.count}}{{/let}}</counter.Provide>',
           {
             strictMode: true,
-            scope: () => ({ Capture, counter }),
+            scope: () => ({ counter }),
           }
         ),
         templateOnly()
@@ -240,7 +239,7 @@ moduleFor(
       this.renderComponent(Root);
       assertHTML('0');
 
-      assert.ok(captured, 'Capture observed the instance');
+      assert.ok(captured, 'factory produced the instance');
       run(() => {
         captured!.count = 5;
       });
