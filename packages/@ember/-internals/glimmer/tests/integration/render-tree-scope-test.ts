@@ -563,3 +563,291 @@ moduleFor(
     }
   }
 );
+
+/**
+ * Extra-coverage suite for behaviors not exercised by the EPCC port:
+ *
+ * - class-form detection (`makeContext(SomeClass)` invokes via `new`)
+ * - consume() from a plain function helper
+ * - consume() from a modifier
+ * - explicit @value={{undefined}} / @value={{null}}
+ * - cross-renderComponent isolation
+ * - multiple consume() calls in the same template return the same identity
+ */
+import { defineSimpleHelper, defineSimpleModifier } from 'internal-test-helpers';
+
+moduleFor(
+  'RFC #1154 -- makeContext: extra coverage',
+  class extends MakeContextTestCase {
+    afterEach() {
+      runDestroy(this);
+    }
+
+    '@test class-form: makeContext(SomeClass) invokes via `new`'(assert: QUnit['assert']) {
+      let constructed = 0;
+      class Counter {
+        n: number;
+        constructor() {
+          constructed++;
+          this.n = 42;
+          // `new.target` is only defined when called via `new`. If the
+          // detection regressed to plain invocation, this would be undefined.
+          if (new.target === undefined) {
+            throw new Error('Counter was invoked without `new`');
+          }
+        }
+      }
+      const counter = makeContext(Counter);
+
+      let observed: number | undefined;
+      class Reader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          observed = counter.consume().n;
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), Reader);
+
+      let Root = setComponentTemplate(
+        precompileTemplate('<counter.Provide><Reader/></counter.Provide>', {
+          strictMode: true,
+          scope: () => ({ counter, Reader }),
+        }),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(constructed, 1, 'Counter constructed once');
+      assert.strictEqual(observed, 42, 'consumer saw the constructed instance');
+    }
+
+    '@test consume() works inside a plain function helper'(assert: QUnit['assert']) {
+      const ctx = makeContext(() => 'default');
+
+      // A genuine helper -- not just `(ctx.consume)` in a let-binding.
+      // This exercises that consume() can be called from a function whose
+      // identity is wrapped by the helper manager, which is the case NVP
+      // explicitly motivates in the RFC ("helpers, modifiers, etc.").
+      const readContext = defineSimpleHelper(() => ctx.consume());
+
+      let Root = setComponentTemplate(
+        precompileTemplate(
+          '<ctx.Provide @value="from-helper"><div id="content">{{(readContext)}}</div></ctx.Provide>',
+          { strictMode: true, scope: () => ({ ctx, readContext }) }
+        ),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(this.element.querySelector('#content')?.textContent, 'from-helper');
+    }
+
+    '@test consume() works inside a modifier'(assert: QUnit['assert']) {
+      const ctx = makeContext(() => 'default');
+
+      let observed: string | undefined;
+      const stash = defineSimpleModifier((_element: Element) => {
+        observed = ctx.consume() as string;
+      });
+
+      let Root = setComponentTemplate(
+        precompileTemplate(
+          '<ctx.Provide @value="from-modifier"><div {{stash}}>x</div></ctx.Provide>',
+          { strictMode: true, scope: () => ({ ctx, stash }) }
+        ),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(observed, 'from-modifier', 'modifier saw the enclosing context');
+    }
+
+    '@test explicit @value={{undefined}} provides undefined (not "no provider")'(
+      assert: QUnit['assert']
+    ) {
+      const ctx = makeContext<string | undefined>(() => 'factory-default');
+
+      let observed: unknown = 'NOT_SET';
+      class Reader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          observed = ctx.consume();
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), Reader);
+
+      // Explicit @value=undefined -- the consumer should see undefined,
+      // NOT throw "no provider" (the Provide *is* in the tree, it just
+      // chose to provide an undefined value).
+      let Root = setComponentTemplate(
+        precompileTemplate('<ctx.Provide @value={{undefined}}><Reader/></ctx.Provide>', {
+          strictMode: true,
+          scope: () => ({ ctx, Reader }),
+        }),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(observed, undefined, 'consumer saw the explicit undefined value');
+    }
+
+    '@test explicit @value={{null}} provides null'(assert: QUnit['assert']) {
+      const ctx = makeContext<string | null>(() => 'factory-default');
+
+      let observed: unknown = 'NOT_SET';
+      class Reader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          observed = ctx.consume();
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), Reader);
+
+      let Root = setComponentTemplate(
+        precompileTemplate('<ctx.Provide @value={{null}}><Reader/></ctx.Provide>', {
+          strictMode: true,
+          scope: () => ({ ctx, Reader }),
+        }),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(observed, null, 'consumer saw the explicit null value');
+    }
+
+    '@test multiple consume() calls in the same template return the same identity'(
+      assert: QUnit['assert']
+    ) {
+      // Each consume() walks up the scope chain. They should both find the
+      // same provider entry and return the same value. For class-instance
+      // factories that means strict-equal identity.
+      class State {
+        marker = Symbol('state');
+      }
+      const ctx = makeContext(State);
+
+      let firstSeen: State | undefined;
+      let secondSeen: State | undefined;
+      class FirstReader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          firstSeen = ctx.consume();
+        }
+      }
+      class SecondReader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          secondSeen = ctx.consume();
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), FirstReader);
+      setComponentTemplate(precompileTemplate(''), SecondReader);
+
+      let Root = setComponentTemplate(
+        precompileTemplate('<ctx.Provide><FirstReader/><SecondReader/></ctx.Provide>', {
+          strictMode: true,
+          scope: () => ({ ctx, FirstReader, SecondReader }),
+        }),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.ok(firstSeen, 'first reader observed');
+      assert.ok(secondSeen, 'second reader observed');
+      assert.strictEqual(firstSeen, secondSeen, 'both consumers see the same instance');
+    }
+  }
+);
+
+/**
+ * Independent renderComponent trees must not share scope state. This sits
+ * in its own module so each test's `renderComponent` call is independent
+ * (the base class wires `into: #qunit-fixture`, so we render two trees
+ * into separate sub-elements within the same fixture).
+ */
+moduleFor(
+  'RFC #1154 -- makeContext: cross-renderComponent isolation',
+  class extends MakeContextTestCase {
+    afterEach() {
+      runDestroy(this);
+    }
+
+    "@test separate renderComponent calls do not see each other's providers"(
+      assert: QUnit['assert']
+    ) {
+      const ctx = makeContext(() => 'factory-default');
+
+      let bareError: Error | undefined;
+      class BareReader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          try {
+            ctx.consume();
+          } catch (e) {
+            bareError = e as Error;
+          }
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), BareReader);
+
+      let providedSeen: string | undefined;
+      class ProvidedReader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          providedSeen = ctx.consume() as string;
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), ProvidedReader);
+
+      // Two independent component trees, both rendered into the fixture
+      // but in separate `renderComponent` calls. The first has no
+      // <Provide>; the second is wrapped in one. The presence of a
+      // <Provide> in tree #2 must not bleed into tree #1.
+      const fixture = this.element;
+      const slotA = document.createElement('div');
+      const slotB = document.createElement('div');
+      fixture.appendChild(slotA);
+      fixture.appendChild(slotB);
+
+      let TreeA = setComponentTemplate(
+        precompileTemplate('<BareReader/>', {
+          strictMode: true,
+          scope: () => ({ BareReader }),
+        }),
+        templateOnly()
+      );
+      let TreeB = setComponentTemplate(
+        precompileTemplate('<ctx.Provide @value="B"><ProvidedReader/></ctx.Provide>', {
+          strictMode: true,
+          scope: () => ({ ctx, ProvidedReader }),
+        }),
+        templateOnly()
+      );
+
+      run(() => {
+        const { owner } = this;
+        const a = renderComponent(TreeA, {
+          owner,
+          env: { document, isInteractive: true, hasDOM: true },
+          into: slotA,
+        });
+        const b = renderComponent(TreeB, {
+          owner,
+          env: { document, isInteractive: true, hasDOM: true },
+          into: slotB,
+        });
+        registerDestructor(this, () => {
+          a.destroy();
+          b.destroy();
+        });
+      });
+
+      assert.ok(bareError, 'tree A: no provider, consume() threw');
+      assert.ok(
+        /No matching `<Provide>`/.test(bareError?.message ?? ''),
+        `error mentions missing provider, got: ${bareError?.message}`
+      );
+      assert.strictEqual(providedSeen, 'B', 'tree B: own <Provide @value="B"> visible');
+    }
+  }
+);

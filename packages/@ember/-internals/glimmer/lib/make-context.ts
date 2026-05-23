@@ -146,7 +146,7 @@ export function makeContext<T>(factory: ContextFactory<T>): Context<T> {
       if (valueRef !== undefined) {
         read = () => valueForRef(valueRef);
       } else {
-        const factoryValue: T = isClassConstructor(factory)
+        const factoryValue: T = isNewable(factory)
           ? new (factory as new () => T)()
           : (factory as () => T)();
         read = () => factoryValue;
@@ -164,10 +164,13 @@ export function makeContext<T>(factory: ContextFactory<T>): Context<T> {
 // Per-instance behavior is parameterized via the closure in makeContext.
 const PROVIDE_TEMPLATE = precompileTemplate('{{yield}}');
 
-function isClassConstructor(fn: unknown): boolean {
+function isNewable(fn: unknown): boolean {
+  // From ember-primitives' `isNewable` (see ember-primitives/src/utils.ts):
+  // arrow functions have no `prototype` at all, so they fail this check;
+  // classes (and old-style constructor functions) have a `prototype` whose
+  // `constructor` points back to themselves. This is robust under
+  // transpilation, unlike a `Function.prototype.toString` sniff.
   if (typeof fn !== 'function') return false;
-  // ES classes serialize starting with `class`; arrow / regular functions do
-  // not. This is the standard "is class" sniff and is good enough for our
-  // dual-overload accepting either form.
-  return /^class[\s{]/.test(Function.prototype.toString.call(fn));
+  const proto = (fn as { prototype?: { constructor?: unknown } }).prototype;
+  return proto !== undefined && proto !== null && proto.constructor === fn;
 }
