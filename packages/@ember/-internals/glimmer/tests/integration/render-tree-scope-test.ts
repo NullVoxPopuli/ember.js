@@ -211,14 +211,12 @@ moduleFor(
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          [
-            '<ctx.Provide @value="1">',
-            '  {{#let (ctx.consume) as |v|}}<div id="content-1">{{v}}</div>{{/let}}',
-            '  <ctx.Provide @value="2">',
-            '    {{#let (ctx.consume) as |v|}}<div id="content-2">{{v}}</div>{{/let}}',
-            '  </ctx.Provide>',
-            '</ctx.Provide>',
-          ].join('\n'),
+          `<ctx.Provide @value="1">
+             {{#let (ctx.consume) as |v|}}<div id="content-1">{{v}}</div>{{/let}}
+             <ctx.Provide @value="2">
+               {{#let (ctx.consume) as |v|}}<div id="content-2">{{v}}</div>{{/let}}
+             </ctx.Provide>
+           </ctx.Provide>`,
           { strictMode: true, scope: () => ({ ctx }) }
         ),
         templateOnly()
@@ -294,10 +292,8 @@ moduleFor(
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          [
-            '<ctx.Provide @value="1">{{#let (ctx.consume) as |v|}}<div id="content-1">{{v}}</div>{{/let}}</ctx.Provide>',
-            '<ctx.Provide @value="2">{{#let (ctx.consume) as |v|}}<div id="content-2">{{v}}</div>{{/let}}</ctx.Provide>',
-          ].join('\n'),
+          `<ctx.Provide @value="1">{{#let (ctx.consume) as |v|}}<div id="content-1">{{v}}</div>{{/let}}</ctx.Provide>
+           <ctx.Provide @value="2">{{#let (ctx.consume) as |v|}}<div id="content-2">{{v}}</div>{{/let}}</ctx.Provide>`,
           { strictMode: true, scope: () => ({ ctx }) }
         ),
         templateOnly()
@@ -320,13 +316,11 @@ moduleFor(
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          [
-            '<ctx.Provide @value={{state.count}}>',
-            '  {{#unless state.hidden}}',
-            '    {{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}',
-            '  {{/unless}}',
-            '</ctx.Provide>',
-          ].join('\n'),
+          `<ctx.Provide @value={{state.count}}>
+             {{#unless state.hidden}}
+               {{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}
+             {{/unless}}
+           </ctx.Provide>`,
           { strictMode: true, scope: () => ({ ctx, state }) }
         ),
         templateOnly()
@@ -370,11 +364,9 @@ moduleFor(
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          [
-            '{{#unless state.hidden}}',
-            '  <ctx.Provide @value="1">{{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}</ctx.Provide>',
-            '{{/unless}}',
-          ].join('\n'),
+          `{{#unless state.hidden}}
+             <ctx.Provide @value="1">{{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}</ctx.Provide>
+           {{/unless}}`,
           { strictMode: true, scope: () => ({ ctx, state }) }
         ),
         templateOnly()
@@ -407,14 +399,12 @@ moduleFor(
       // consumer, so it must never override the outer @value="1".
       let Root = setComponentTemplate(
         precompileTemplate(
-          [
-            '<ctx.Provide @value="1">',
-            '  {{#unless state.hidden}}',
-            '    <ctx.Provide @value="2"></ctx.Provide>',
-            '  {{/unless}}',
-            '  {{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}',
-            '</ctx.Provide>',
-          ].join('\n'),
+          `<ctx.Provide @value="1">
+             {{#unless state.hidden}}
+               <ctx.Provide @value="2"></ctx.Provide>
+             {{/unless}}
+             {{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}
+           </ctx.Provide>`,
           { strictMode: true, scope: () => ({ ctx, state }) }
         ),
         templateOnly()
@@ -444,14 +434,12 @@ moduleFor(
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          [
-            '<ctxOne.Provide @value="1">',
-            '  <ctxTwo.Provide @value="2">',
-            '    {{#let (ctxOne.consume) as |a|}}<div id="content-1">{{a}}</div>{{/let}}',
-            '    {{#let (ctxTwo.consume) as |b|}}<div id="content-2">{{b}}</div>{{/let}}',
-            '  </ctxTwo.Provide>',
-            '</ctxOne.Provide>',
-          ].join('\n'),
+          `<ctxOne.Provide @value="1">
+             <ctxTwo.Provide @value="2">
+               {{#let (ctxOne.consume) as |a|}}<div id="content-1">{{a}}</div>{{/let}}
+               {{#let (ctxTwo.consume) as |b|}}<div id="content-2">{{b}}</div>{{/let}}
+             </ctxTwo.Provide>
+           </ctxOne.Provide>`,
           { strictMode: true, scope: () => ({ ctxOne, ctxTwo }) }
         ),
         templateOnly()
