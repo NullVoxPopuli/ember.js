@@ -35,15 +35,11 @@ import {
   wrap,
 } from '@glimmer/debug/lib/stack-check';
 import { REFERENCE, UNDEFINED_REFERENCE } from '@glimmer/reference/lib/reference';
-import { COMPUTE } from '@glimmer/validator/lib/validators';
-
 import { ScopeImpl } from '../../scope';
 import { VMArgumentsImpl } from '../../vm/arguments';
 import { ComponentElementOperations } from './component';
 
-export const CheckTag: Checker<Tag> = CheckInterface({
-  [COMPUTE]: CheckFunction,
-});
+export const CheckTag: Checker<Tag> = CheckFunction as unknown as Checker<Tag>;
 
 export const CheckOperations: Checker<Nullable<ComponentElementOperations>> = wrap(() =>
   CheckNullable(CheckInstanceof(ComponentElementOperations))

@@ -4,10 +4,7 @@ import toString from '@ember/-internals/utils/lib/to-string';
 import inspect from '@ember/debug/lib/inspect';
 import { assert } from '@ember/debug';
 import { isDestroyed } from '@glimmer/destroyable';
-import { DEBUG } from '@glimmer/env';
-import type { UpdatableTag } from '@glimmer/interfaces';
 import {
-  ALLOW_CYCLES,
   UPDATE_TAG as updateTag,
   validateTag,
   valueForTag,
@@ -392,17 +389,14 @@ export class ComputedProperty extends ComputedDescriptor {
     let meta = metaFor(obj);
     let tagMeta = tagMetaFor(obj);
 
-    let propertyTag = tagFor(obj, keyName, tagMeta) as UpdatableTag;
+    let propertyTag = tagFor(obj, keyName, tagMeta);
 
     let ret;
-
     let revision = meta.revisionFor(keyName);
 
     if (revision !== undefined && validateTag(propertyTag, revision)) {
       ret = meta.valueFor(keyName);
     } else {
-      // For backwards compatibility, we only throw if the CP has any dependencies. CPs without dependencies
-      // should be allowed, even after the object has been destroyed, which is why we check _dependentKeys.
       assert(
         `Attempted to access the computed ${obj}.${keyName} on a destroyed object, which is not allowed`,
         this._dependentKeys === undefined || !isDestroyed(obj)
@@ -410,17 +404,12 @@ export class ComputedProperty extends ComputedDescriptor {
 
       let { _getter, _dependentKeys } = this;
 
-      // Create a tracker that absorbs any trackable actions inside the CP
       untrack(() => {
         ret = _getter!.call(obj, keyName);
       });
 
       if (_dependentKeys !== undefined) {
         updateTag(propertyTag, getChainTagsForKeys(obj, _dependentKeys, tagMeta, meta));
-
-        if (DEBUG) {
-          ALLOW_CYCLES!.set(propertyTag, true);
-        }
       }
 
       meta.setValueFor(keyName, ret);
@@ -489,16 +478,11 @@ export class ComputedProperty extends ComputedDescriptor {
       finishLazyChains(meta, keyName, ret);
 
       let tagMeta = tagMetaFor(obj);
-      let propertyTag = tagFor(obj, keyName, tagMeta) as UpdatableTag;
+      let propertyTag = tagFor(obj, keyName, tagMeta);
 
       let { _dependentKeys } = this;
-
       if (_dependentKeys !== undefined) {
         updateTag(propertyTag, getChainTagsForKeys(obj, _dependentKeys, tagMeta, meta));
-
-        if (DEBUG) {
-          ALLOW_CYCLES!.set(propertyTag, true);
-        }
       }
 
       meta.setRevisionFor(keyName, valueForTag(propertyTag));
@@ -556,10 +540,9 @@ class AutoComputedProperty extends ComputedProperty {
     let meta = metaFor(obj);
     let tagMeta = tagMetaFor(obj);
 
-    let propertyTag = tagFor(obj, keyName, tagMeta) as UpdatableTag;
+    let propertyTag = tagFor(obj, keyName, tagMeta);
 
     let ret;
-
     let revision = meta.revisionFor(keyName);
 
     if (revision !== undefined && validateTag(propertyTag, revision)) {
@@ -572,7 +555,6 @@ class AutoComputedProperty extends ComputedProperty {
 
       let { _getter } = this;
 
-      // Create a tracker that absorbs any trackable actions inside the CP
       let tag = track(() => {
         ret = _getter!.call(obj, keyName);
       });
@@ -587,8 +569,6 @@ class AutoComputedProperty extends ComputedProperty {
 
     consumeTag(propertyTag);
 
-    // Add the tag of the returned value if it is an array, since arrays
-    // should always cause updates if they are consumed and then changed
     if (Array.isArray(ret)) {
       consumeTag(tagFor(ret, '[]', tagMeta));
     }

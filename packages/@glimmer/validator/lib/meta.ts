@@ -1,5 +1,5 @@
 import { DEBUG } from '@glimmer/env';
-import type { ConstantTag, UpdatableTag } from '@glimmer/interfaces';
+import type { UpdatableTag } from '@glimmer/interfaces';
 
 import type { Indexable } from './utils';
 
@@ -59,7 +59,7 @@ export function tagFor<T extends object>(
   obj: T,
   key: keyof T | string | symbol,
   meta?: TagMeta
-): UpdatableTag | ConstantTag {
+): UpdatableTag {
   let tags = meta === undefined ? tagMetaFor(obj) : meta;
   let tag = tags.get(key);
 

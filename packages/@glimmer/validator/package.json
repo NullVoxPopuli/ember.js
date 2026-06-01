@@ -38,7 +38,8 @@
   },
   "dependencies": {
     "@glimmer/global-context": "workspace:*",
-    "@glimmer/interfaces": "workspace:*"
+    "@glimmer/interfaces": "workspace:*",
+    "alien-signals": "^3.2.0"
   },
   "devDependencies": {
     "@glimmer/debug-util": "workspace:*",

@@ -33,16 +33,12 @@ export {
   untrack,
 } from './lib/tracking';
 export {
-  ALLOW_CYCLES,
   bump,
   combine,
-  COMPUTE,
-  CONSTANT,
   CONSTANT_TAG,
   createTag,
   createUpdatableTag,
   CURRENT_TAG,
-  CurrentTag,
   DIRTY_TAG as dirtyTag,
   INITIAL,
   isConstTag,
@@ -50,9 +46,7 @@ export {
   UPDATE_TAG as updateTag,
   validateTag,
   valueForTag,
-  VOLATILE,
   VOLATILE_TAG,
-  VolatileTag,
 } from './lib/validators';
 export type {
   CombinatorTag,

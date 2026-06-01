@@ -303,6 +303,10 @@ export function hiddenDependencies() {
       findFromProject('decorator-transforms').root,
       'dist/runtime.js'
     ),
+    'alien-signals': resolve(
+      findFromProject('@glimmer/validator', 'alien-signals').root,
+      'esm/index.mjs'
+    ),
   };
 }
 
