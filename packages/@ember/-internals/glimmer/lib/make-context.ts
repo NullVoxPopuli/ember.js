@@ -81,12 +81,12 @@ export interface Context<T> {
  * @public
  */
 export function makeContext<T>(): Context<T> {
-  // Identity-based key, so multiple contexts can coexist on the same scope
-  // without name collisions. Held in the closure -- not exported.
-  const key = {};
-
+  // `consume` doubles as this context's identity token: it is unique to this
+  // `makeContext()` call and stable, so the matching `<Provide>` and
+  // `consume()` find each other on a shared render-scope node without
+  // colliding with other contexts. Held in the closure -- not exported.
   function consume(): T {
-    let read = lookupRenderContext(key);
+    let read = lookupRenderContext(consume);
     if (read === undefined) {
       throw new Error(
         '`consume()` was called outside of rendering. The render-tree scope is only available during rendering -- there is nothing to read.'
@@ -117,7 +117,7 @@ export function makeContext<T>(): Context<T> {
       const valueRef = this.args.named['value'];
       const read = (): unknown => (valueRef === undefined ? undefined : valueForRef(valueRef));
 
-      provideRenderContext(key, read);
+      provideRenderContext(consume, read);
     }
   }
 
