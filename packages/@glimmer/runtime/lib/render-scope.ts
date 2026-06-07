@@ -2,64 +2,35 @@ import type { Nullable } from '@glimmer/interfaces';
 import { StackImpl as Stack } from '@glimmer/util/lib/collections';
 
 /**
- * The publicly observable shape of a render-tree scope. See RFC #1154.
+ * Render-tree scope tracking that backs `makeContext` (RFC #1154).
  *
- * `entries` walks the scope's own entries first, then up the parent chain --
- * which matches the user-visible "look up the render tree" semantics that
- * provide/consume needs.
+ * This is intentionally narrow: the only thing it supports is "provide a value
+ * for a key at the current render node" and "look up the nearest provider of a
+ * key walking up the render tree". `makeContext` is the sole consumer, so there
+ * is no general-purpose `getScope`/`addToScope` surface -- just the two
+ * context-specific helpers exported at the bottom of this file.
  *
- * Reactivity is intentionally _not_ part of this object: access happens during
- * rendering, and entries only change when the surrounding render node itself
+ * Reactivity is intentionally not modeled here: lookups happen during
+ * rendering, and the providers visible at a node only change when that node
  * re-renders (or is torn down), so consumers do not need to subscribe.
  */
-export interface RenderScope {
-  readonly entries: Iterable<unknown>;
-}
+
+// A read function returns the currently-provided value for a context key. It is
+// evaluated lazily so that auto-tracking inside it (e.g. reading `@value`) makes
+// consumers reactive to the provided value.
+type ContextRead = () => unknown;
 
 interface RenderScopeNode {
   parent: Nullable<RenderScopeNode>;
-  // Lazily allocated -- most render nodes never call addToScope, and we want
-  // iteration to skip them cheaply.
-  data: Nullable<unknown[]>;
-  // Cached view; lazily created the first time getCurrentScope() is observed
-  // for this node so the same identity is returned for repeated calls.
-  view: Nullable<RenderScope>;
-}
-
-function* iterateUp(start: Nullable<RenderScopeNode>): Iterator<unknown> {
-  let node = start;
-  while (node !== null) {
-    if (node.data !== null) {
-      // Most recent additions first -- consumers searching for "the nearest
-      // provider" can short-circuit as soon as they find a match.
-      for (let i = node.data.length - 1; i >= 0; i--) {
-        yield node.data[i];
-      }
-    }
-    node = node.parent;
-  }
-}
-
-function viewFor(node: RenderScopeNode): RenderScope {
-  if (node.view === null) {
-    node.view = {
-      get entries() {
-        return {
-          [Symbol.iterator]: () => iterateUp(node),
-        };
-      },
-    };
-  }
-  return node.view;
+  // key -> read fn for the contexts provided at this node. Lazily allocated --
+  // the overwhelming majority of render nodes never provide a context.
+  contexts: Nullable<Map<object, ContextRead>>;
 }
 
 /**
- * Tracks the render-tree scope hierarchy for the public `getScope` /
- * `addToScope` API proposed in RFC #1154.
- *
- * This mirrors the stack management of `DebugRenderTree`, but is always-on
- * because it is part of the framework's public surface area (not a debug-only
- * tool).
+ * Tracks the render-tree scope hierarchy. This mirrors the stack management of
+ * `DebugRenderTree`, but is always-on because it backs a real (non-debug)
+ * feature.
  */
 export class RenderScopeTracker {
   // Stack of currently-rendering scope nodes; the top is the "current" scope.
@@ -83,8 +54,7 @@ export class RenderScopeTracker {
   create(bucket: object): void {
     let node: RenderScopeNode = {
       parent: this.stack.current ?? null,
-      data: null,
-      view: null,
+      contexts: null,
     };
     this.nodes.set(bucket, node);
     this.stack.push(node);
@@ -110,42 +80,46 @@ export class RenderScopeTracker {
 
   /**
    * Called when the render node is torn down. The WeakMap will collect the
-   * node naturally; we just drop the explicit reference so the node's
-   * `data` (which may hold user state) can be released eagerly.
+   * node naturally; we just drop the explicit references so the provided
+   * values (which may hold user state) can be released eagerly.
    */
   willDestroy(bucket: object): void {
     let node = this.nodes.get(bucket);
     if (node !== undefined) {
-      node.data = null;
+      node.contexts = null;
       node.parent = null;
-      node.view = null;
       this.nodes.delete(bucket);
     }
   }
 
-  /**
-   * Returns the publicly observable scope for the top of the stack, or
-   * `undefined` when called outside of rendering.
-   */
-  getCurrentScope(): RenderScope | undefined {
+  get isRendering(): boolean {
     let node = this.stack.current;
-    if (node === undefined || node === null) {
-      return undefined;
-    }
-    return viewFor(node);
+    return node !== undefined && node !== null;
   }
 
-  addToCurrentScope(entry: unknown): void {
+  /** Provide `key`'s value (via the lazy `read`) at the current render node. */
+  provide(key: object, read: ContextRead): void {
     let node = this.stack.current;
     if (node === undefined || node === null) {
-      throw new Error(
-        'addToScope() may only be called while rendering -- there is no active scope.'
-      );
+      throw new Error('Cannot provide a context value -- there is no active render scope.');
     }
-    if (node.data === null) {
-      node.data = [];
+    (node.contexts ??= new Map()).set(key, read);
+  }
+
+  /**
+   * Walk from the current node up the parent chain for the nearest provider of
+   * `key`. Returns its read fn, or `null` if no provider exists in the tree.
+   */
+  lookup(key: object): Nullable<ContextRead> {
+    let node = this.stack.current ?? null;
+    while (node !== null) {
+      let read = node.contexts?.get(key);
+      if (read !== undefined) {
+        return read;
+      }
+      node = node.parent;
     }
-    node.data.push(entry);
+    return null;
   }
 
   private reset(): void {
@@ -156,22 +130,36 @@ export class RenderScopeTracker {
 }
 
 // Module-level reference to the active tracker. The renderer assigns this
-// before invoking the render loop and clears it on commit, so that the public
-// `getScope` / `addToScope` helpers can be called from anywhere within a
-// rendering tick.
+// before invoking the render loop and clears it on commit, so that the
+// context helpers below can be called from anywhere within a rendering tick
+// (e.g. a `consume()` helper that has no handle to the VM).
 let CURRENT_TRACKER: RenderScopeTracker | undefined;
 
 export function setCurrentRenderScopeTracker(tracker: RenderScopeTracker | undefined): void {
   CURRENT_TRACKER = tracker;
 }
 
-export function getCurrentRenderScope(): RenderScope | undefined {
-  return CURRENT_TRACKER?.getCurrentScope();
+/**
+ * Provide `key`'s value (via the lazy `read`) at the current render node. Used
+ * by `makeContext`'s `<Provide>`. Throws if called outside of rendering.
+ */
+export function provideRenderContext(key: object, read: ContextRead): void {
+  if (CURRENT_TRACKER === undefined) {
+    throw new Error('Cannot provide a context value -- there is no active render scope.');
+  }
+  CURRENT_TRACKER.provide(key, read);
 }
 
-export function addToCurrentRenderScope(entry: unknown): void {
-  if (CURRENT_TRACKER === undefined) {
-    throw new Error('addToScope() may only be called while rendering -- there is no active scope.');
+/**
+ * Look up the nearest provider of `key` in the render tree. Returns:
+ *
+ * - `undefined` when called outside of rendering,
+ * - `null` when rendering but no provider for `key` exists,
+ * - the nearest provider's read fn otherwise.
+ */
+export function lookupRenderContext(key: object): ContextRead | null | undefined {
+  if (CURRENT_TRACKER === undefined || !CURRENT_TRACKER.isRendering) {
+    return undefined;
   }
-  CURRENT_TRACKER.addToCurrentScope(entry);
+  return CURRENT_TRACKER.lookup(key);
 }

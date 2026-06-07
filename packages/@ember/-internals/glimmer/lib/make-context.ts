@@ -2,7 +2,7 @@
  * @module @ember/helper
  */
 import { precompileTemplate } from '@ember/template-compilation';
-import { addToCurrentRenderScope, getCurrentRenderScope } from '@glimmer/runtime/lib/render-scope';
+import { lookupRenderContext, provideRenderContext } from '@glimmer/runtime/lib/render-scope';
 import { valueForRef } from '@glimmer/reference/lib/reference';
 import InternalComponent, {
   type OpaqueInternalComponentConstructor,
@@ -17,25 +17,6 @@ import InternalComponent, {
 export interface Context<T> {
   Provide: OpaqueInternalComponentConstructor;
   consume: () => T;
-}
-
-// Internal entry shape stored in the render-tree scope. The key identifies the
-// context (closure-captured by makeContext); `read` returns the current
-// provided value -- evaluated lazily so that the auto-tracking inside
-// `valueForRef` makes consumers reactive to the `@value` argument.
-interface ContextEntry {
-  key: object;
-  read: () => unknown;
-}
-
-function isContextEntry(entry: unknown): entry is ContextEntry {
-  return (
-    typeof entry === 'object' &&
-    entry !== null &&
-    'key' in entry &&
-    'read' in entry &&
-    typeof (entry as ContextEntry).read === 'function'
-  );
 }
 
 /**
@@ -105,20 +86,18 @@ export function makeContext<T>(): Context<T> {
   const key = {};
 
   function consume(): T {
-    let scope = getCurrentRenderScope();
-    if (scope === undefined) {
+    let read = lookupRenderContext(key);
+    if (read === undefined) {
       throw new Error(
         '`consume()` was called outside of rendering. The render-tree scope is only available during rendering -- there is nothing to read.'
       );
     }
-    for (let entry of scope.entries) {
-      if (isContextEntry(entry) && entry.key === key) {
-        return entry.read() as T;
-      }
+    if (read === null) {
+      throw new Error(
+        'No matching `<Provide>` was found in the render tree. Wrap consumers in `<Context.Provide @value={{...}}>...</Context.Provide>`, or provide a default at the application root.'
+      );
     }
-    throw new Error(
-      'No matching `<Provide>` was found in the render tree. Wrap consumers in `<Context.Provide @value={{...}}>...</Context.Provide>`, or provide a default at the application root.'
-    );
+    return read() as T;
   }
 
   class Provide extends InternalComponent {
@@ -138,8 +117,7 @@ export function makeContext<T>(): Context<T> {
       const valueRef = this.args.named['value'];
       const read = (): unknown => (valueRef === undefined ? undefined : valueForRef(valueRef));
 
-      const entry: ContextEntry = { key, read };
-      addToCurrentRenderScope(entry);
+      provideRenderContext(key, read);
     }
   }
 
