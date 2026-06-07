@@ -1,5 +1,5 @@
 /**
- * @module @ember/renderer
+ * @module @ember/helper
  */
 import { precompileTemplate } from '@ember/template-compilation';
 import { addToCurrentRenderScope, getCurrentRenderScope } from '@glimmer/runtime/lib/render-scope';
@@ -51,7 +51,7 @@ function isContextEntry(entry: unknown): entry is ContextEntry {
  * @example
  *
  * ```gjs
- * import { makeContext } from '@ember/renderer';
+ * import { makeContext } from '@ember/helper';
  *
  * class Theme {
  *   color = 'dark';
