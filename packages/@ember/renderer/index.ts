@@ -88,11 +88,11 @@ export { renderComponent } from '@ember/-internals/glimmer/lib/renderer';
  * See [RFC #1154](https://github.com/emberjs/rfcs/pull/1154) and the original
  * [Context RFC #975](https://github.com/emberjs/rfcs/pull/975).
  *
- * `makeContext` returns an object with:
+ * `makeContext` takes no value of its own — it only establishes the *type*
+ * of the value (via a type parameter) and returns an object with:
  *
- * - `Provide`: a component that, on every render, produces a fresh value
- *    from the given class or factory and exposes it to every descendant in
- *    the block.
+ * - `Provide`: a component that exposes its `@value` argument to every
+ *    descendant in the block.
  * - `consume()`: a function (also usable as a template helper) that returns
  *    the nearest enclosing provided value. **Throws** if there is no
  *    matching provider higher in the render tree, or if called outside of
@@ -105,12 +105,12 @@ export { renderComponent } from '@ember/-internals/glimmer/lib/renderer';
  *   color = 'dark';
  * }
  *
- * const theme = makeContext(Theme);
+ * const theme = makeContext<Theme>();
  *
  * <template>
- *   <theme.Provide>
+ *   <theme.Provide @value={{this.theme}}>
  *     {{#let (theme.consume) as |t|}}
- *       {{t.color}} {{! "dark" }}
+ *       {{t.color}}
  *     {{/let}}
  *   </theme.Provide>
  *
@@ -118,18 +118,16 @@ export { renderComponent } from '@ember/-internals/glimmer/lib/renderer';
  * </template>
  * ```
  *
- * Reactivity: the *value* returned by the factory is not itself tracked,
- * but `@tracked` state on it is — mutating tracked fields invalidates
- * consumers as expected.
+ * Reactivity: the `@value` binding is reactive. When the argument updates,
+ * consumers re-render; mutating `@tracked` fields on a stable provided
+ * object likewise invalidates consumers.
  *
  * @method makeContext
  * @static
  * @for @ember/renderer
- * @param {Function} factory A zero-arg class or factory function that
- *   produces a fresh value each time `<Provide>` is rendered.
  * @returns {Object} `{ Provide, consume }`
  * @public
  */
 export { makeContext } from '@ember/-internals/glimmer/lib/make-context';
 
-export type { Context, ContextFactory } from '@ember/-internals/glimmer/lib/make-context';
+export type { Context } from '@ember/-internals/glimmer/lib/make-context';

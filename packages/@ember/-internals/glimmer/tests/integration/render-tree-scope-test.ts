@@ -21,25 +21,24 @@ import type Owner from '@ember/owner';
 /**
  * Coverage for `makeContext` (the user-facing API discussed in
  * https://github.com/emberjs/rfcs/pull/1154 -- NullVoxPopuli's
- * `makeContext(Klass)` proposal returning `{ Provide, consume }`).
+ * `makeContext` proposal returning `{ Provide, consume }`).
  *
- * The bulk of the substantive scenarios here are ported from
+ * The API:
+ *
+ *   - `makeContext<T>()` takes no value -- the type parameter declares the
+ *     shape, and the value is supplied at render time via `<Provide @value>`.
+ *   - `<myContext.Provide @value={{...}}>` provides a value to descendants.
+ *   - `(myContext.consume)` (a function helper) or `myContext.consume()` in
+ *     JS reads the nearest provided value.
+ *
+ * The substantive scenarios here are ported from
  * `customerio/ember-provide-consume-context`'s test suite -- the prior-art
- * implementation that NullVoxPopuli called out in the RFC. The intent is
- * to pin down the *same behaviors* that production users of that library
- * rely on (sibling isolation, conditionals, reactivity to value changes,
- * etc.), translated to the makeContext API where:
- *
- *   - The string `@key=` becomes a closure-captured `makeContext` identity.
- *   - `<ContextProvider>` becomes `<myContext.Provide>` (optionally with
- *     `@value=`).
- *   - `<ContextConsumer>` becomes `(myContext.consume)` (a function
- *     helper) or `myContext.consume()` in JS.
- *
- * Where the two APIs intentionally diverge (e.g. EPCC's `getContext`
- * returns `undefined` for missing context, whereas makeContext throws per
- * NVP's "reduce harm" clarification), the test is rewritten to assert the
- * makeContext behavior.
+ * implementation that NullVoxPopuli called out in the RFC -- to pin down the
+ * same behaviors production users rely on (sibling isolation, conditionals,
+ * reactivity to value changes, etc.). Where the two APIs intentionally
+ * diverge (EPCC's `getContext` returns `undefined` for missing context,
+ * whereas makeContext throws per NVP's "reduce harm" clarification), the
+ * test asserts the makeContext behavior.
  */
 
 class MakeContextTestCase extends AbstractStrictTestCase {
@@ -69,6 +68,41 @@ class MakeContextTestCase extends AbstractStrictTestCase {
 }
 
 moduleFor(
+  'RFC #1154 -- makeContext: smoke test',
+  class extends MakeContextTestCase {
+    afterEach() {
+      runDestroy(this);
+    }
+
+    '@test provide a value, consume it, and it renders'(assert: QUnit['assert']) {
+      class Theme {
+        color = 'dark';
+      }
+      const theme = makeContext<Theme>();
+      const value = new Theme();
+
+      let Root = setComponentTemplate(
+        precompileTemplate(
+          '<theme.Provide @value={{value}}>{{#let (theme.consume) as |t|}}<div id="content">{{t.color}}</div>{{/let}}</theme.Provide>',
+          {
+            strictMode: true,
+            scope: () => ({ theme, value }),
+          }
+        ),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(
+        this.element.querySelector('#content')?.textContent,
+        'dark',
+        'consumer rendered the provided value'
+      );
+    }
+  }
+);
+
+moduleFor(
   'RFC #1154 -- makeContext: API surface',
   class extends MakeContextTestCase {
     afterEach() {
@@ -76,10 +110,7 @@ moduleFor(
     }
 
     '@test consume() throws if called outside of rendering'(assert: QUnit['assert']) {
-      class Theme {
-        color = 'dark';
-      }
-      const theme = makeContext(Theme);
+      const theme = makeContext<{ color: string }>();
 
       assert.throws(
         () => theme.consume(),
@@ -89,10 +120,7 @@ moduleFor(
     }
 
     '@test consume() throws when no <Provide> exists in the tree'(assert: QUnit['assert']) {
-      class Theme {
-        color = 'dark';
-      }
-      const theme = makeContext(Theme);
+      const theme = makeContext<{ color: string }>();
 
       let error: Error | undefined;
       class Reader extends GlimmerishComponent {
@@ -124,49 +152,16 @@ moduleFor(
       );
     }
 
-    '@test factory form: makeContext(() => value)'(assert: QUnit['assert']) {
-      // Plain factory -- no class.
-      let made = 0;
-      const cfg = makeContext(() => {
-        made++;
-        return { label: 'hello' };
-      });
-
-      let observed: string | undefined;
-      class Reader extends GlimmerishComponent {
-        constructor(owner: Owner, args: Record<string, unknown>) {
-          super(owner, args);
-          observed = cfg.consume().label;
-        }
-      }
-      setComponentTemplate(precompileTemplate('r'), Reader);
-
-      let Root = setComponentTemplate(
-        precompileTemplate('<cfg.Provide><Reader/></cfg.Provide>', {
-          strictMode: true,
-          scope: () => ({ Reader, cfg }),
-        }),
-        templateOnly()
-      );
-
-      this.renderComponent(Root);
-
-      assert.strictEqual(made, 1, 'factory ran exactly once');
-      assert.strictEqual(observed, 'hello', 'consumer saw the factory-produced value');
-    }
-
     '@test (context.consume) is usable as a template helper'(assert: QUnit['assert']) {
-      class Theme {
-        color = 'dark';
-      }
-      const theme = makeContext(Theme);
+      const theme = makeContext<{ color: string }>();
+      const value = { color: 'dark' };
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          '<theme.Provide>{{#let (theme.consume) as |t|}}{{t.color}}{{/let}}</theme.Provide>',
+          '<theme.Provide @value={{value}}>{{#let (theme.consume) as |t|}}{{t.color}}{{/let}}</theme.Provide>',
           {
             strictMode: true,
-            scope: () => ({ theme }),
+            scope: () => ({ theme, value }),
           }
         ),
         templateOnly()
@@ -192,11 +187,11 @@ moduleFor(
     }
 
     '@test a consumer can read context'(assert: QUnit['assert']) {
-      const ctx = makeContext(() => '5');
+      const ctx = makeContext<string>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          '<ctx.Provide>{{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}</ctx.Provide>',
+          '<ctx.Provide @value="5">{{#let (ctx.consume) as |v|}}<div id="content">{{v}}</div>{{/let}}</ctx.Provide>',
           { strictMode: true, scope: () => ({ ctx }) }
         ),
         templateOnly()
@@ -207,7 +202,7 @@ moduleFor(
     }
 
     '@test a consumer reads from the closest provider'(assert: QUnit['assert']) {
-      const ctx = makeContext(() => '0');
+      const ctx = makeContext<string>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
@@ -232,7 +227,7 @@ moduleFor(
         @tracked count = 1;
       }
       const state = new State();
-      const ctx = makeContext(() => 0);
+      const ctx = makeContext<number>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
@@ -252,8 +247,8 @@ moduleFor(
     }
 
     "@test a consumer can't access a context it isn't nested in"(assert: QUnit['assert']) {
-      const ctxA = makeContext(() => 'missing');
-      const ctxB = makeContext(() => 'missing');
+      const ctxA = makeContext<string>();
+      const ctxB = makeContext<string>();
 
       let error: Error | undefined;
       class Reader extends GlimmerishComponent {
@@ -288,7 +283,7 @@ moduleFor(
     }
 
     '@test sibling Provides with the same context do not bleed'(assert: QUnit['assert']) {
-      const ctx = makeContext(() => 'default');
+      const ctx = makeContext<string>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
@@ -312,7 +307,7 @@ moduleFor(
         @tracked hidden = false;
       }
       const state = new State();
-      const ctx = makeContext(() => 0);
+      const ctx = makeContext<number>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
@@ -360,7 +355,7 @@ moduleFor(
         @tracked hidden = false;
       }
       const state = new State();
-      const ctx = makeContext(() => 'default');
+      const ctx = makeContext<string>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
@@ -393,7 +388,7 @@ moduleFor(
         @tracked hidden = true;
       }
       const state = new State();
-      const ctx = makeContext(() => 'default');
+      const ctx = makeContext<string>();
 
       // The inner ctx.Provide @value="2" is in a sibling subtree of the
       // consumer, so it must never override the outer @value="1".
@@ -429,8 +424,8 @@ moduleFor(
     }
 
     '@test multiple distinct contexts can be nested'(assert: QUnit['assert']) {
-      const ctxOne = makeContext(() => '0');
-      const ctxTwo = makeContext(() => '0');
+      const ctxOne = makeContext<string>();
+      const ctxTwo = makeContext<string>();
 
       let Root = setComponentTemplate(
         precompileTemplate(
@@ -450,36 +445,26 @@ moduleFor(
       assert.strictEqual(this.element.querySelector('#content-2')?.textContent, '2');
     }
 
-    '@test @tracked state on a factory-provided class instance is reactive'(
-      assert: QUnit['assert']
-    ) {
+    '@test @tracked state on a provided class instance is reactive'(assert: QUnit['assert']) {
       class Counter {
         @tracked count = 0;
       }
-      // Capture the instance via the factory itself -- the factory runs
-      // exactly once per <Provide>, so this avoids needing a separate
-      // capturing component.
-      let captured: Counter | undefined;
-      const counter = makeContext(() => {
-        const c = new Counter();
-        captured = c;
-        return c;
-      });
+      const counter = makeContext<Counter>();
+      const instance = new Counter();
 
       let Root = setComponentTemplate(
         precompileTemplate(
-          '<counter.Provide>{{#let (counter.consume) as |c|}}<div id="content">{{c.count}}</div>{{/let}}</counter.Provide>',
-          { strictMode: true, scope: () => ({ counter }) }
+          '<counter.Provide @value={{instance}}>{{#let (counter.consume) as |c|}}<div id="content">{{c.count}}</div>{{/let}}</counter.Provide>',
+          { strictMode: true, scope: () => ({ counter, instance }) }
         ),
         templateOnly()
       );
 
       this.renderComponent(Root);
       assert.strictEqual(this.element.querySelector('#content')?.textContent, '0');
-      assert.ok(captured, 'factory produced the instance');
 
       run(() => {
-        captured!.count = 5;
+        instance.count = 5;
       });
       assert.strictEqual(this.element.querySelector('#content')?.textContent, '5');
     }
@@ -490,13 +475,13 @@ moduleFor(
       // Mirrors EPCC's "a consumer can read context during initialization":
       // when the consumer is a class component, its constructor should see
       // the enclosing provider's value (not throw, not see a stale one).
-      const ctx = makeContext(() => 'wrong');
+      const ctx = makeContext<string>();
 
       let observed: string | undefined;
       class Reader extends GlimmerishComponent {
         constructor(owner: Owner, args: Record<string, unknown>) {
           super(owner, args);
-          observed = ctx.consume() as string;
+          observed = ctx.consume();
         }
       }
       setComponentTemplate(precompileTemplate('done'), Reader);
@@ -513,26 +498,26 @@ moduleFor(
       assert.strictEqual(observed, 'provided');
     }
 
-    '@test factory-provided value is stable across the same Provide re-render'(
+    '@test a provided object identity is stable across the same Provide re-render'(
       assert: QUnit['assert']
     ) {
-      // EPCC analogue: providing a class instance preserves identity. If a
-      // sibling tracked re-render happens, the same instance should be
-      // re-yielded -- not a new one. This is important for downstream code
-      // that uses identity (e.g. caching, refs).
+      // Providing a stable object preserves identity. If a sibling tracked
+      // re-render happens, the same instance should be re-yielded -- not a
+      // new one. This matters for downstream code that uses identity (e.g.
+      // caching, refs).
       class State {
         @tracked tick = 0;
       }
       const state = new State();
 
-      let count = 0;
-      const ctx = makeContext(() => ({ id: count++ }));
+      const value = { id: 1 };
+      const ctx = makeContext<{ id: number }>();
 
       let observed: object[] = [];
       class Reader extends GlimmerishComponent {
         constructor(owner: Owner, args: Record<string, unknown>) {
           super(owner, args);
-          observed.push(ctx.consume() as object);
+          observed.push(ctx.consume());
         }
       }
       setComponentTemplate(precompileTemplate(''), Reader);
@@ -540,26 +525,25 @@ moduleFor(
       let Root = setComponentTemplate(
         precompileTemplate(
           // The bare {{state.tick}} consumes the tracked tag so toggling it
-          // forces the surrounding region to re-render, but the <Provide>
-          // itself doesn't re-instantiate the factory.
-          '<ctx.Provide>{{state.tick}}<Reader/></ctx.Provide>',
-          { strictMode: true, scope: () => ({ ctx, state, Reader }) }
+          // forces the surrounding region to re-render.
+          '<ctx.Provide @value={{value}}>{{state.tick}}<Reader/></ctx.Provide>',
+          { strictMode: true, scope: () => ({ ctx, state, value, Reader }) }
         ),
         templateOnly()
       );
 
       this.renderComponent(Root);
       const first = observed[0];
-      assert.ok(first, 'reader observed the value once');
+      assert.strictEqual(first, value, 'reader observed the provided object');
 
       run(() => {
         state.tick = 1;
       });
 
-      // Reader's constructor only fires once -- so we don't get a second
-      // observed entry. The real guarantee here is that the factory only
-      // ran once: `count` must be 1.
-      assert.strictEqual(count, 1, 'factory was not re-invoked on parent re-render');
+      // Reader's constructor only fires once, so we don't get a second
+      // observed entry -- but the value it saw was the stable instance.
+      assert.strictEqual(observed.length, 1, 'reader constructed once');
+      assert.strictEqual(first, value, 'provided object identity is stable');
     }
   }
 );
@@ -567,7 +551,6 @@ moduleFor(
 /**
  * Extra-coverage suite for behaviors not exercised by the EPCC port:
  *
- * - class-form detection (`makeContext(SomeClass)` invokes via `new`)
  * - consume() from a plain function helper
  * - consume() from a modifier
  * - explicit @value={{undefined}} / @value={{null}}
@@ -583,46 +566,8 @@ moduleFor(
       runDestroy(this);
     }
 
-    '@test class-form: makeContext(SomeClass) invokes via `new`'(assert: QUnit['assert']) {
-      let constructed = 0;
-      class Counter {
-        n: number;
-        constructor() {
-          constructed++;
-          this.n = 42;
-          // `new.target` is only defined when called via `new`. If the
-          // detection regressed to plain invocation, this would be undefined.
-          if (new.target === undefined) {
-            throw new Error('Counter was invoked without `new`');
-          }
-        }
-      }
-      const counter = makeContext(Counter);
-
-      let observed: number | undefined;
-      class Reader extends GlimmerishComponent {
-        constructor(owner: Owner, args: Record<string, unknown>) {
-          super(owner, args);
-          observed = counter.consume().n;
-        }
-      }
-      setComponentTemplate(precompileTemplate(''), Reader);
-
-      let Root = setComponentTemplate(
-        precompileTemplate('<counter.Provide><Reader/></counter.Provide>', {
-          strictMode: true,
-          scope: () => ({ counter, Reader }),
-        }),
-        templateOnly()
-      );
-
-      this.renderComponent(Root);
-      assert.strictEqual(constructed, 1, 'Counter constructed once');
-      assert.strictEqual(observed, 42, 'consumer saw the constructed instance');
-    }
-
     '@test consume() works inside a plain function helper'(assert: QUnit['assert']) {
-      const ctx = makeContext(() => 'default');
+      const ctx = makeContext<string>();
 
       // A genuine helper -- not just `(ctx.consume)` in a let-binding.
       // This exercises that consume() can be called from a function whose
@@ -652,7 +597,7 @@ moduleFor(
       // modifier install in the enclosing component's scope) doesn't break
       // silently. RFC #1154 motivates "all invokables" -- modifiers are
       // an extension worth its own follow-up.
-      const ctx = makeContext(() => 'default');
+      const ctx = makeContext<string>();
 
       let caught: Error | undefined;
       const stash = defineSimpleModifier((_element: Element) => {
@@ -682,7 +627,7 @@ moduleFor(
     '@test explicit @value={{undefined}} provides undefined (not "no provider")'(
       assert: QUnit['assert']
     ) {
-      const ctx = makeContext<string | undefined>(() => 'factory-default');
+      const ctx = makeContext<string | undefined>();
 
       let observed: unknown = 'NOT_SET';
       class Reader extends GlimmerishComponent {
@@ -708,8 +653,34 @@ moduleFor(
       assert.strictEqual(observed, undefined, 'consumer saw the explicit undefined value');
     }
 
+    '@test omitting @value provides undefined (not "no provider")'(assert: QUnit['assert']) {
+      const ctx = makeContext<string | undefined>();
+
+      let observed: unknown = 'NOT_SET';
+      class Reader extends GlimmerishComponent {
+        constructor(owner: Owner, args: Record<string, unknown>) {
+          super(owner, args);
+          observed = ctx.consume();
+        }
+      }
+      setComponentTemplate(precompileTemplate(''), Reader);
+
+      // No @value at all -- the Provide is still in the tree, so consume()
+      // returns undefined rather than throwing.
+      let Root = setComponentTemplate(
+        precompileTemplate('<ctx.Provide><Reader/></ctx.Provide>', {
+          strictMode: true,
+          scope: () => ({ ctx, Reader }),
+        }),
+        templateOnly()
+      );
+
+      this.renderComponent(Root);
+      assert.strictEqual(observed, undefined, 'consumer saw undefined when @value omitted');
+    }
+
     '@test explicit @value={{null}} provides null'(assert: QUnit['assert']) {
-      const ctx = makeContext<string | null>(() => 'factory-default');
+      const ctx = makeContext<string | null>();
 
       let observed: unknown = 'NOT_SET';
       class Reader extends GlimmerishComponent {
@@ -736,12 +707,13 @@ moduleFor(
       assert: QUnit['assert']
     ) {
       // Each consume() walks up the scope chain. They should both find the
-      // same provider entry and return the same value. For class-instance
-      // factories that means strict-equal identity.
+      // same provider entry and return the same value -- strict-equal
+      // identity for a provided object.
       class State {
         marker = Symbol('state');
       }
-      const ctx = makeContext(State);
+      const ctx = makeContext<State>();
+      const instance = new State();
 
       let firstSeen: State | undefined;
       let secondSeen: State | undefined;
@@ -761,10 +733,13 @@ moduleFor(
       setComponentTemplate(precompileTemplate(''), SecondReader);
 
       let Root = setComponentTemplate(
-        precompileTemplate('<ctx.Provide><FirstReader/><SecondReader/></ctx.Provide>', {
-          strictMode: true,
-          scope: () => ({ ctx, FirstReader, SecondReader }),
-        }),
+        precompileTemplate(
+          '<ctx.Provide @value={{instance}}><FirstReader/><SecondReader/></ctx.Provide>',
+          {
+            strictMode: true,
+            scope: () => ({ ctx, instance, FirstReader, SecondReader }),
+          }
+        ),
         templateOnly()
       );
 
@@ -792,7 +767,7 @@ moduleFor(
     "@test separate renderComponent calls do not see each other's providers"(
       assert: QUnit['assert']
     ) {
-      const ctx = makeContext(() => 'factory-default');
+      const ctx = makeContext<string>();
 
       let bareError: Error | undefined;
       class BareReader extends GlimmerishComponent {
@@ -811,7 +786,7 @@ moduleFor(
       class ProvidedReader extends GlimmerishComponent {
         constructor(owner: Owner, args: Record<string, unknown>) {
           super(owner, args);
-          providedSeen = ctx.consume() as string;
+          providedSeen = ctx.consume();
         }
       }
       setComponentTemplate(precompileTemplate(''), ProvidedReader);

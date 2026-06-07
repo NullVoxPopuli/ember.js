@@ -11,7 +11,7 @@ import InternalComponent, {
 
 /**
  * The shape returned by `makeContext`. Use `Provide` in templates to bind a
- * fresh value into the render tree and `consume` to read the nearest enclosing
+ * value into the render tree and `consume` to read the nearest enclosing
  * value.
  */
 export interface Context<T> {
@@ -19,12 +19,10 @@ export interface Context<T> {
   consume: () => T;
 }
 
-export type ContextFactory<T> = (new () => T) | (() => T);
-
 // Internal entry shape stored in the render-tree scope. The key identifies the
 // context (closure-captured by makeContext); `read` returns the current
-// provided value -- evaluated lazily so that, when `@value` is passed, the
-// auto-tracking inside `valueForRef` makes consumers reactive to it.
+// provided value -- evaluated lazily so that the auto-tracking inside
+// `valueForRef` makes consumers reactive to the `@value` argument.
 interface ContextEntry {
   key: object;
   read: () => unknown;
@@ -45,6 +43,11 @@ function isContextEntry(entry: unknown): entry is ContextEntry {
  *
  * [rfc]: https://github.com/emberjs/rfcs/pull/1154
  *
+ * `makeContext` takes no value of its own -- it only establishes the
+ * *type* of the value (via a type parameter) and returns a `Provide`
+ * component plus a `consume` reader. The value is supplied at render time
+ * through `<Provide @value={{...}}>`.
+ *
  * @example
  *
  * ```gjs
@@ -54,41 +57,32 @@ function isContextEntry(entry: unknown): entry is ContextEntry {
  *   color = 'dark';
  * }
  *
- * const theme = makeContext(Theme);
+ * const theme = makeContext<Theme>();
  *
  * <template>
- *   <theme.Provide>
+ *   <theme.Provide @value={{this.theme}}>
  *     {{#let (theme.consume) as |t|}}
- *       {{t.color}} {{! "dark" }}
+ *       {{t.color}} {{! whatever this.theme.color is }}
  *     {{/let}}
  *   </theme.Provide>
  *
- *   {{! Override the value at this provider: }}
- *   <theme.Provide @value={{(hash color="light")}}>
- *     {{#let (theme.consume) as |t|}}
- *       {{t.color}} {{! "light" }}
- *     {{/let}}
+ *   {{! Override the value at a nested provider: }}
+ *   <theme.Provide @value={{this.theme}}>
+ *     <theme.Provide @value={{this.lightTheme}}>
+ *       {{#let (theme.consume) as |t|}}
+ *         {{t.color}} {{! the light theme's color }}
+ *       {{/let}}
+ *     </theme.Provide>
  *   </theme.Provide>
  *
  *   {{ (theme.consume) }} {{! throws -- no provider in the hierarchy }}
  * </template>
  * ```
  *
- * Both factory forms are supported:
- * - A class (`makeContext(SomeClass)`) — each `<Provide>` constructs a fresh
- *   instance via `new SomeClass()`.
- * - A factory function (`makeContext(() => value)`) — each `<Provide>`
- *   invokes the factory to produce a fresh value.
- *
- * `<Provide>` also accepts an optional `@value` argument. When passed, that
- * value is provided to descendants instead of the factory's output, and
- * consumers re-render automatically when the argument updates.
- *
- * Reactivity rules:
- * - For factory-provided values, the *value* returned by the factory is not
- *   itself tracked. Put `@tracked` state on it for reactivity.
- * - For `@value`-provided values, the binding is reactive to argument
- *   updates as you'd expect.
+ * Reactivity: the `@value` binding is reactive. When the argument passed to
+ * `<Provide>` updates, consumers re-render automatically. If `@value` is a
+ * stable object, mutating its `@tracked` fields likewise re-renders
+ * consumers.
  *
  * `consume()` throws if it is called outside of rendering, or if no
  * matching `<Provide>` exists higher in the render tree. This is
@@ -100,14 +94,12 @@ function isContextEntry(entry: unknown): entry is ContextEntry {
  * @method makeContext
  * @static
  * @for @ember/renderer
- * @param {Function} factory A zero-arg class or factory function that
- *   produces a fresh value each time `<Provide>` is rendered (and `@value`
- *   was not passed).
- * @returns {Object} An object with `Provide` (a component) and `consume`
- *   (a function/helper that reads the nearest provided value).
+ * @returns {Object} An object with `Provide` (a component that takes a
+ *   `@value`) and `consume` (a function/helper that reads the nearest
+ *   provided value).
  * @public
  */
-export function makeContext<T>(factory: ContextFactory<T>): Context<T> {
+export function makeContext<T>(): Context<T> {
   // Identity-based key, so multiple contexts can coexist on the same scope
   // without name collisions. Held in the closure -- not exported.
   const key = {};
@@ -125,7 +117,7 @@ export function makeContext<T>(factory: ContextFactory<T>): Context<T> {
       }
     }
     throw new Error(
-      'No matching `<Provide>` was found in the render tree. Wrap consumers in `<Context.Provide>...</Context.Provide>`, or provide a default at the application root.'
+      'No matching `<Provide>` was found in the render tree. Wrap consumers in `<Context.Provide @value={{...}}>...</Context.Provide>`, or provide a default at the application root.'
     );
   }
 
@@ -137,20 +129,14 @@ export function makeContext<T>(factory: ContextFactory<T>): Context<T> {
     constructor(...args: ConstructorParameters<typeof InternalComponent>) {
       super(...args);
 
-      // If `@value` was passed, store a lazy read that pulls the current
-      // value from the argument reference. `valueForRef` consumes tracking
-      // tags when called inside a tracking frame, so consumers re-render
-      // automatically when the argument updates.
+      // The provided value comes from `@value`. Store a lazy read that pulls
+      // the current value from the argument reference. `valueForRef` consumes
+      // tracking tags when called inside a tracking frame, so consumers
+      // re-render automatically when the argument updates. If `@value` was
+      // omitted, the provider still exists in the tree and provides
+      // `undefined` (consume() returns undefined rather than throwing).
       const valueRef = this.args.named['value'];
-      let read: () => unknown;
-      if (valueRef !== undefined) {
-        read = () => valueForRef(valueRef);
-      } else {
-        const factoryValue: T = isNewable(factory)
-          ? new (factory as new () => T)()
-          : (factory as () => T)();
-        read = () => factoryValue;
-      }
+      const read = (): unknown => (valueRef === undefined ? undefined : valueForRef(valueRef));
 
       const entry: ContextEntry = { key, read };
       addToCurrentRenderScope(entry);
@@ -163,14 +149,3 @@ export function makeContext<T>(factory: ContextFactory<T>): Context<T> {
 // All Provide components share the same template: yield to the block.
 // Per-instance behavior is parameterized via the closure in makeContext.
 const PROVIDE_TEMPLATE = precompileTemplate('{{yield}}');
-
-function isNewable(fn: unknown): boolean {
-  // From ember-primitives' `isNewable` (see ember-primitives/src/utils.ts):
-  // arrow functions have no `prototype` at all, so they fail this check;
-  // classes (and old-style constructor functions) have a `prototype` whose
-  // `constructor` points back to themselves. This is robust under
-  // transpilation, unlike a `Function.prototype.toString` sniff.
-  if (typeof fn !== 'function') return false;
-  const proto = (fn as { prototype?: { constructor?: unknown } }).prototype;
-  return proto !== undefined && proto !== null && proto.constructor === fn;
-}

@@ -475,7 +475,7 @@ export {
   type View,
 } from './lib/renderer';
 // RFC #1154 -- render-tree-scoped context (provide/consume)
-export { makeContext, type Context, type ContextFactory } from './lib/make-context';
+export { makeContext, type Context } from './lib/make-context';
 export {
   getTemplate,
   setTemplate,
