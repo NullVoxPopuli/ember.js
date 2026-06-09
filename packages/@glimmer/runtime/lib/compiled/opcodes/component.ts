@@ -898,7 +898,7 @@ APPEND_OPCODES.add(VM_DID_RENDER_LAYOUT_OP, (vm, { op1: register }) => {
   let bounds = vm.tree().popBlock();
 
   // RFC #1154 -- pop the render scope stack to match the create() done in
-  // VM_GET_COMPONENT_SELF_OP. This must happen unconditionally and outside
+  // VM_CREATE_COMPONENT_OP. This must happen unconditionally and outside
   // the debugRenderTree branch below.
   vm.env.renderScope.exit();
   vm.updateWith(new RenderScopeExitOpcode());

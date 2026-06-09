@@ -553,7 +553,7 @@ moduleFor(
  *
  * - consume() from a plain function helper
  * - consume() from a modifier
- * - explicit @value={{undefined}} / @value={{null}}
+ * - explicit @value={{undefined}} / @value={{null}}, and omitting @value
  * - cross-renderComponent isolation
  * - multiple consume() calls in the same template return the same identity
  */

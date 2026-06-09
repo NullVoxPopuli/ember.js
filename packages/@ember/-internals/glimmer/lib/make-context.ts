@@ -74,7 +74,7 @@ export interface Context<T> {
  *
  * @method makeContext
  * @static
- * @for @ember/renderer
+ * @for @ember/helper
  * @returns {Object} An object with `Provide` (a component that takes a
  *   `@value`) and `consume` (a function/helper that reads the nearest
  *   provided value).
