@@ -72,10 +72,28 @@ import { type default as Owner, getOwner as internalGetOwner } from '@ember/-int
   }
   ```
 
+  `getOwner` may also be called with no argument from inside a plain function
+  helper, where there is no `this` to read the owner from. While the helper is
+  rendering, it returns the owner the helper was invoked with:
+
+  ```js
+  import { getOwner } from '@ember/owner';
+
+  function currentLocale() {
+    return getOwner()?.lookup('service:intl').locale;
+  }
+
+  // Usage: {{ (currentLocale) }}
+  ```
+
+  Outside of a plain function helper's invocation, the no-argument form returns
+  `undefined`.
+
   @method getOwner
   @static
   @for @ember/owner
-  @param {Object} object An object with an owner.
+  @param {Object} [object] An object with an owner. When omitted, the ambient
+    owner of the currently-rendering plain function helper is returned.
   @return {Object} An owner object.
   @since 2.3.0
   @public
@@ -84,7 +102,7 @@ import { type default as Owner, getOwner as internalGetOwner } from '@ember/-int
 // TS (not incorrectly! Nothing expressly relates them) does not see that the
 // `InternalOwner` and `Owner` do actually have identical constraints on their
 // relations to the `DIRegistry`.
-const getOwner = internalGetOwner as (object: object) => Owner | undefined;
+const getOwner = internalGetOwner as (object?: object) => Owner | undefined;
 export { getOwner };
 
 // Everything else which is part of the public API, we can directly re-export.

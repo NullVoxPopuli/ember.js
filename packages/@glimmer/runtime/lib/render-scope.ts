@@ -12,6 +12,11 @@ interface RenderScopeNode {
   contexts: Nullable<Map<object, ContextRead>>;
 }
 
+// A well-known context key under which the active owner is provided (see the
+// helper opcodes). The owner is just a context, so `getOwner()` reuses the same
+// provide/lookup machinery and walks up the render tree exactly like `consume()`.
+export const OWNER: object = {};
+
 /**
  * Tracks the render-tree node hierarchy so a consumer can find the nearest
  * provider above it. Mirrors `DebugRenderTree`'s stack management, but is

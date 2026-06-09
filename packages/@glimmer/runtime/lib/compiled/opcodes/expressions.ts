@@ -56,6 +56,7 @@ import { $v0 } from '@glimmer/vm/lib/registers';
 
 import { isCurriedType, resolveCurriedValue } from '../../curried-value';
 import { APPEND_OPCODES } from '../../opcodes';
+import { OWNER, provideRenderContext } from '../../render-scope';
 import createCurryRef from '../../references/curry-value';
 import { reifyPositional } from '../../vm/arguments';
 import { createConcatRef } from '../expressions/concat';
@@ -99,6 +100,10 @@ APPEND_OPCODES.add(VM_DYNAMIC_HELPER_OP, (vm) => {
 
   let helperRef: Initializable<Reference>;
   let initialOwner = vm.getOwner();
+  // RFC #1154 -- provide the owner as a context on the current render node so
+  // `getOwner()` (no argument) works inside this helper (and walks up the tree
+  // like any context). This is the dynamic path (e.g. `{{(this.helper)}}`).
+  provideRenderContext(OWNER, () => initialOwner);
 
   let helperInstanceRef = createComputeRef(() => {
     if (helperRef !== undefined) {
@@ -176,7 +181,12 @@ APPEND_OPCODES.add(VM_HELPER_OP, (vm, { op1: handle }) => {
   let stack = vm.stack;
   let helper = check(vm.constants.getValue(handle), CheckHelper);
   let args = check(stack.pop(), CheckArguments);
-  let value = helper(args.capture(), vm.getOwner(), vm.dynamicScope());
+  let owner = vm.getOwner();
+  // RFC #1154 -- provide the owner as a context on the current render node so
+  // `getOwner()` (no argument) works inside this helper (and walks up the tree
+  // like any context). This is the static path; see VM_DYNAMIC_HELPER_OP too.
+  provideRenderContext(OWNER, () => owner);
+  let value = helper(args.capture(), owner, vm.dynamicScope());
 
   if (_hasDestroyableChildren(value)) {
     vm.associateDestroyable(value);

@@ -4,6 +4,7 @@ import { Component } from '@ember/-internals/glimmer';
 import { precompileTemplate } from '@ember/template-compilation';
 import { set } from '@ember/object';
 import { action } from '@ember/object';
+import { getOwner } from '@ember/owner';
 
 moduleFor(
   'Helpers test: default helper manager',
@@ -167,6 +168,55 @@ moduleFor(
 
       this.render(`<FooBar />`);
       this.assertText('hello');
+    }
+
+    '@test getOwner() with no arguments returns the owner inside a plain function helper'(assert) {
+      let captured = 'NOT_SET';
+
+      function whoOwnsMe() {
+        captured = getOwner();
+        return 'rendered';
+      }
+
+      this.render('{{(this.whoOwnsMe)}}', { whoOwnsMe });
+
+      this.assertText('rendered');
+      assert.strictEqual(captured, this.owner, 'getOwner() returned the rendering owner');
+    }
+
+    '@test getOwner() with no arguments works in a function helper passed as an argument'(assert) {
+      let captured = 'NOT_SET';
+
+      function whoOwnsMe() {
+        captured = getOwner();
+        return 'rendered';
+      }
+
+      this.owner.register(
+        'component:foo-bar',
+        setComponentTemplate(precompileTemplate('{{(@whoOwnsMe)}}'), class extends Component {})
+      );
+
+      this.render(`<FooBar @whoOwnsMe={{this.whoOwnsMe}} />`, { whoOwnsMe });
+
+      this.assertText('rendered');
+      assert.strictEqual(captured, this.owner, 'getOwner() returned the rendering owner');
+    }
+
+    '@test getOwner() is undefined outside a helper and the ambient is restored afterward'(assert) {
+      assert.strictEqual(getOwner(), undefined, 'no ambient owner before rendering');
+
+      let captured = 'NOT_SET';
+      let whoOwnsMe = () => {
+        captured = getOwner();
+        return 'rendered';
+      };
+
+      this.render('{{(this.whoOwnsMe)}}', { whoOwnsMe });
+      this.assertText('rendered');
+
+      assert.strictEqual(captured, this.owner, 'the helper saw the rendering owner');
+      assert.strictEqual(getOwner(), undefined, 'ambient owner cleared again after the helper ran');
     }
   }
 );

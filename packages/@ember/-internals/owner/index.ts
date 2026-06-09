@@ -1,4 +1,5 @@
 import { getOwner as glimmerGetOwner, setOwner as glimmerSetOwner } from '@glimmer/owner';
+import { OWNER as OWNER_CONTEXT, lookupRenderContext } from '@glimmer/runtime/lib/render-scope';
 
 /**
   @module @ember/owner
@@ -539,7 +540,14 @@ export function isFactory(obj: unknown): obj is InternalFactory<object> {
 // NOTE: For docs, see the definition at the public API site in `@ember/owner`;
 // we document it there for the sake of public API docs and for TS consumption,
 // while having the richer `InternalOwner` representation for Ember itself.
-export function getOwner(object: object): InternalOwner | undefined {
+export function getOwner(object?: object): InternalOwner | undefined {
+  // With no argument, read the owner from the render tree -- it is provided as a
+  // context by the helper opcode, so `getOwner()` works inside a plain function
+  // helper (which has no `this`) and walks up the tree like any context.
+  if (object === undefined) {
+    let read = lookupRenderContext(OWNER_CONTEXT);
+    return read ? (read() as InternalOwner | undefined) : undefined;
+  }
   // SAFETY: this is a convention. From the glimmer perspective, the owner really can be any object.
   return glimmerGetOwner(object) as InternalOwner;
 }
