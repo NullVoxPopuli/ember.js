@@ -60,7 +60,6 @@ export interface RenderScopeTracker {
   create(bucket: object): void;
   enter(bucket: object): void;
   exit(): void;
-  willDestroy(bucket: object): void;
 }
 
 export interface RuntimeOptions {

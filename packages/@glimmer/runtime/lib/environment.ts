@@ -183,7 +183,6 @@ export class EnvironmentImpl implements Environment {
     transaction.commit();
 
     this.debugRenderTree?.commit();
-    this.renderScope.commit();
     setCurrentRenderScopeTracker(undefined);
 
     this.delegate.onTransactionCommit();

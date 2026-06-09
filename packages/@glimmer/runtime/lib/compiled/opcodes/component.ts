@@ -393,10 +393,6 @@ APPEND_OPCODES.add(VM_CREATE_COMPONENT_OP, (vm, { op1: flags }) => {
   // debugRenderTree would be too late: the user constructor runs in
   // manager.create() below.
   vm.env.renderScope.create(instance);
-  vm.associateDestroyable(instance);
-  registerDestructor(instance, () => {
-    vm.env.renderScope.willDestroy(instance);
-  });
   vm.updateWith(new RenderScopeUpdateOpcode(instance));
 
   if (!managerHasCapability(manager, capabilities, InternalComponentCapabilities.createInstance)) {
